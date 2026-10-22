@@ -69,7 +69,14 @@ class Sessao {
   async req(caminho, opcoes = {}) {
     const res = await fetch(ORIGEM + caminho, {
       ...opcoes,
+      // Mesmos cabeçalhos de um Safari no portal; o firewall do Insper barra o login de clientes "não navegador"
       headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+        Origin: 'https://sga.insper.edu.br',
+        Referer: ORIGEM,
         ...opcoes.headers,
         Cookie: [...this.cookies].map(([k, v]) => k + '=' + v).join('; '),
       },
@@ -101,6 +108,8 @@ class Sessao {
     });
     if (!res.ok) {
       const msg = (await res.text().catch(() => '')).slice(0, 200);
+      // 403 com "Access Denied" é o firewall do site, não senha errada; só senha errada pausa as tentativas
+      if (/Access Denied/i.test(msg)) throw new Error('Acesso bloqueado pelo firewall do Insper (HTTP ' + res.status + ')');
       throw new Error('Login recusado (HTTP ' + res.status + ')' + (msg ? ': ' + msg : ''));
     }
     const userData = this.cookies.get('user-data');
