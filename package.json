@@ -1,0 +1,8 @@
+{
+  "name": "frequencia-insper",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  }
+}

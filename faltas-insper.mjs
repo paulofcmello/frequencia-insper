@@ -16,7 +16,7 @@ import { publicEncrypt, constants } from 'node:crypto';
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ORIGEM = 'https://sga.insper.edu.br/AOnline/';
 const SERVICO_KEYCHAIN = 'insper-aonline';
@@ -359,11 +359,18 @@ function pagina({ materias, atualizadoEm, erro, fimAulas }, { modo = 'arquivo', 
   const aviso = erro
     ? `<div class="aviso">Não consegui atualizar agora (${esc(erro)}). Mostrando os dados de ${esc(dataBR(atualizadoEm))}.</div>`
     : '';
-  const proxima = modo !== 'arquivo' ? proximaAtualizacao({ fimAulas }) : null;
+  const proxima = modo === 'servidor' || modo === 'github' ? proximaAtualizacao({ fimAulas }) : null;
   const quandoProxima = proxima
     ? ' · próxima automática ' + dataBR(proxima, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
     : '';
-  const botao = modo !== 'arquivo'
+  // Site multiusuário (Vercel): os dados já vêm atualizados a cada visita
+  const botaoWeb = `<form class="acoes" method="post" action="/sair">
+      <a id="atualizar" href="/">Atualizar</a>
+      <button type="submit" class="sair">Sair</button>
+    </form>`;
+  const botao = modo === 'web'
+    ? botaoWeb
+    : modo !== 'arquivo'
     ? `<button id="atualizar" type="button">Atualizar agora</button>
   <script>
     const b = document.getElementById('atualizar');
@@ -413,6 +420,11 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   #atualizar { font:inherit; font-size:14px; font-weight:600; padding:8px 16px; border-radius:980px; border:0;
                background:var(--pres); color:#fff; cursor:pointer; }
   #atualizar:disabled { opacity:.6; cursor:default; }
+  a#atualizar { text-decoration:none; display:inline-block; }
+  .acoes { display:flex; gap:8px; align-items:center; margin:0; }
+  .sair { font:inherit; font-size:14px; padding:8px 14px; border-radius:980px; border:1px solid var(--borda);
+          background:transparent; color:var(--sub); cursor:pointer; }
+  .rodape { color:var(--sub); font-size:12px; margin-top:28px; }
 </style>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
@@ -424,6 +436,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   <p class="sub">Atualizado em ${esc(dataBR(atualizadoEm))}${esc(quandoProxima)} · ordenado pela % das aulas restantes que você ainda pode faltar, da menor pra maior</p>
   ${aviso}
   <section class="grade">${materias.map(cartao).join('')}</section>
+  ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
 </main>
 </body>
 </html>
@@ -578,4 +591,8 @@ async function main() {
   if (process.argv.includes('--abrir')) execFileSync('/usr/bin/open', ['-a', 'Safari', ARQ_HTML]);
 }
 
-main();
+// Usado pelo site multiusuário (api/index.mjs)
+export { Sessao, buscarFrequencia, pagina, esc };
+
+// Só roda a linha de comando quando o arquivo é executado direto, não quando é importado
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
