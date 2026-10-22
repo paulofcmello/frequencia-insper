@@ -1,0 +1,39 @@
+CONTADOR DE FREQUÊNCIA — INSPER
+================================
+
+Mostra, pra cada matéria: quantas aulas restam, presenças (ex.: 13/19),
+faltas (ex.: 5/10) e quanto você ainda pode faltar ("pode faltar 5/11 restantes (45%)").
+Os dados vêm do Aluno Online (sga.insper.edu.br) com o SEU login.
+
+
+OPÇÃO 1 — Página que atualiza sozinha (Mac)
+-------------------------------------------
+Precisa do Node.js 20 ou mais novo (https://nodejs.org, versão LTS).
+
+1. Descompacte a pasta.
+2. Clique com o botão direito em "instalar.command" → Abrir → Abrir.
+   (Se o Mac bloquear, abra o Terminal e rode:  bash ~/Downloads/Frequencia-Insper/instalar.command
+    ajustando o caminho pra onde você descompactou.)
+3. Digite seu login e sua senha do Aluno Online quando pedir.
+4. Abre http://frequencia.localhost:4870 no Safari. Salve nos favoritos.
+
+- Atualiza sozinho 30 min depois de cada aula e às 21h nos dias com aula.
+  Fim de semana e feriado não atualiza. Tem um botão "Atualizar agora".
+- A senha fica só no Keychain do seu Mac. O script só fala com sga.insper.edu.br.
+  Vale dar uma lida em faltas-insper.mjs antes de instalar.
+- Se trocar a senha do Insper, rode o instalador de novo.
+- Pra remover: botão direito em "desinstalar.command" → Abrir.
+
+
+OPÇÃO 2 — Favorito no navegador (qualquer computador, sem instalar nada)
+-----------------------------------------------------------------------
+1. No Chrome: ⋮ → Favoritos e listas → Importar favoritos e configurações
+   → Arquivo HTML de favoritos → escolha "favorito-faltas.html".
+2. Entre no Aluno Online, faça login e clique no favorito "Faltas Insper".
+   Abre um painel com as mesmas informações.
+
+
+OBSERVAÇÃO
+----------
+O portal conta faltas permitidas em horas; o contador converte pra aulas usando
+a duração de cada aula no calendário. Confira se o limite bate com o da sua grade.

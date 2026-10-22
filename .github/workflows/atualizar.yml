@@ -1,0 +1,57 @@
+name: Atualizar frequência
+
+on:
+  schedule:
+    # Horários em UTC (São Paulo = UTC-3). A cada 30 min, de seg a sex, das 07h às 21h30 de SP.
+    # O script só faz login quando passou o horário depois de uma aula; nas outras execuções sai na hora.
+    - cron: '*/30 10-23 * * 1-5'
+    - cron: '0,30 0 * * 2-6'
+  workflow_dispatch:
+    inputs:
+      forcar:
+        description: Atualizar agora, mesmo sem aula recente
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: frequencia
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    outputs:
+      publicar: ${{ steps.script.outputs.publicar }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: script
+        run: node faltas-insper.mjs --github
+        env:
+          INSPER_LOGIN: ${{ secrets.INSPER_LOGIN }}
+          INSPER_SENHA: ${{ secrets.INSPER_SENHA }}
+          FORCAR: ${{ github.event_name == 'workflow_dispatch' && inputs.forcar }}
+          PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+          TZ: America/Sao_Paulo
+      - if: always() && steps.script.outputs.publicar == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publicar:
+    needs: atualizar
+    if: always() && needs.atualizar.outputs.publicar == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

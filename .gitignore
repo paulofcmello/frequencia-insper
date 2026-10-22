@@ -1,0 +1,8 @@
+# Dados pessoais e arquivos gerados localmente
+frequencia-dados.json
+frequencia.html
+atualizacao.log
+site/
+*.tmp
+.DS_Store
+compartilhar/*.zip
