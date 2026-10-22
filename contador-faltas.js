@@ -5,6 +5,11 @@
   const PANEL_ID = 'contador-faltas-panel';
   // Último dia de aula de cada semestre ("ano-semestre" do portal); depois vêm as provas
   const ULTIMO_DIA_DE_AULA = { '2026-62': '2026-11-25' };
+  // Horários que a agenda do portal mostra trocados (dia: 0 = domingo)
+  const CORRECOES_DE_HORARIO = [
+    { de: 'ROBCOMP_3ENGCOMA', para: 'DESCMAT_3ENGCOMA', dia: 2, hora: '16:30' },
+    { de: 'DESCMAT_3ENGCOMA', para: 'ROBCOMP_3ENGCOMA', dia: 4, hora: '16:30' },
+  ];
 
   document.getElementById(PANEL_ID)?.remove();
 
@@ -80,7 +85,11 @@
     for (const ev of eventos) {
       if (ev.tipoEvento !== 'AULA' || vistos.has(ev.eventId)) continue;
       vistos.add(ev.eventId);
-      const turma = (String(ev.descricao).match(/Turma: (\S+)/) || [])[1];
+      let turma = (String(ev.descricao).match(/Turma: (\S+)/) || [])[1];
+      const dia = new Date(String(ev.startStr).slice(0, 10) + 'T12:00:00Z').getUTCDay();
+      const hora = String(ev.startStr).slice(11, 16);
+      const regra = CORRECOES_DE_HORARIO.find((r) => r.de === turma && r.dia === dia && r.hora === hora);
+      if (regra) turma = regra.para;
       if (turma) (aulasPorTurma[turma] = aulasPorTurma[turma] || []).push(ev);
     }
 

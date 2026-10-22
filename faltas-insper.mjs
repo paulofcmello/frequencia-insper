@@ -33,6 +33,20 @@ const ESPERA_APOS_ERRO = 15 * MIN;
 // que aparecem na agenda como aula mas não contam presença. Semestre sem entrada usa a agenda inteira.
 const ULTIMO_DIA_DE_AULA = { '2026-62': '2026-11-25' };
 
+// Horários que a agenda do portal mostra trocados. Cada regra diz: a aula da turma `de`
+// nesse dia da semana (0 = domingo) e horário é, na verdade, da turma `para`.
+const CORRECOES_DE_HORARIO = [
+  { de: 'ROBCOMP_3ENGCOMA', para: 'DESCMAT_3ENGCOMA', dia: 2, hora: '16:30' }, // terça 16:30 é Desconstruindo
+  { de: 'DESCMAT_3ENGCOMA', para: 'ROBCOMP_3ENGCOMA', dia: 4, hora: '16:30' }, // quinta 16:30 é Robótica
+];
+
+function corrigirTurma(turma, ev) {
+  const dia = new Date(String(ev.startStr).slice(0, 10) + 'T12:00:00Z').getUTCDay();
+  const hora = String(ev.startStr).slice(11, 16);
+  const regra = CORRECOES_DE_HORARIO.find((r) => r.de === turma && r.dia === dia && r.hora === hora);
+  return regra ? regra.para : turma;
+}
+
 function limitarAoFimDasAulas(aulas, { ano, semestre }) {
   const ultimo = ULTIMO_DIA_DE_AULA[ano + '-' + semestre];
   if (!ultimo) return aulas;
@@ -161,7 +175,7 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
   for (const ev of eventos) {
     if (ev.tipoEvento !== 'AULA' || vistos.has(ev.eventId)) continue;
     vistos.add(ev.eventId);
-    const turma = (String(ev.descricao).match(/Turma: (\S+)/) || [])[1];
+    const turma = corrigirTurma((String(ev.descricao).match(/Turma: (\S+)/) || [])[1], ev);
     if (turma) (aulasPorTurma[turma] ||= []).push(ev);
   }
 
