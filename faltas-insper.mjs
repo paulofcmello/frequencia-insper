@@ -29,6 +29,16 @@ const MIN = 60 * 1000;
 const ATRASO_POS_AULA = 30 * MIN; // dá tempo do professor lançar a chamada
 const HORA_REPESCAGEM = 21; // checagem extra à noite nos dias com aula
 const ESPERA_APOS_ERRO = 15 * MIN;
+// Último dia de aula de cada semestre ("ano-semestre" do portal). Depois disso vêm as provas,
+// que aparecem na agenda como aula mas não contam presença. Semestre sem entrada usa a agenda inteira.
+const ULTIMO_DIA_DE_AULA = { '2026-62': '2026-11-25' };
+
+function limitarAoFimDasAulas(aulas, { ano, semestre }) {
+  const ultimo = ULTIMO_DIA_DE_AULA[ano + '-' + semestre];
+  if (!ultimo) return aulas;
+  const limite = new Date(ultimo + 'T23:59:59-03:00').getTime();
+  return aulas.filter((a) => a.startDate <= limite);
+}
 const INTERVALO_MANUAL_MIN = 1 * MIN;
 
 function credenciais() {
@@ -165,7 +175,7 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
       const datas = (d.faltasDiarias || []).map((f) => f.data);
       const faltas = nivel.faltasAcumuladas ?? d.totalFaltas ?? datas.length;
 
-      const aulas = aulasPorTurma[m.codigoTurma] || [];
+      const aulas = limitarAoFimDasAulas(aulasPorTurma[m.codigoTurma] || [], m);
       // O portal conta aulas e faltas permitidas em horas; cada encontro vale a duração dele (2h)
       const horasPorAula = aulas.length ? Math.round((aulas[0].endDate - aulas[0].startDate) / 3600000) || 1 : 2;
       const previstasPortal = nivel.aulasPrevistas ?? m.aulasPrevistas;
@@ -193,10 +203,8 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
     })
   );
   materias.sort((a, b) => folga(a) - folga(b) || a.restantes - b.restantes);
-  const turmas = new Set((resumo.content || []).map((m) => m.codigoTurma));
-  const fimAulas = Object.entries(aulasPorTurma)
-    .filter(([turma]) => turmas.has(turma))
-    .flatMap(([, aulas]) => aulas.map((a) => a.endDate))
+  const fimAulas = (resumo.content || [])
+    .flatMap((m) => limitarAoFimDasAulas(aulasPorTurma[m.codigoTurma] || [], m).map((a) => a.endDate))
     .sort((a, b) => a - b);
   return { materias, fimAulas };
 }

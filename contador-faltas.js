@@ -3,6 +3,8 @@
 (async () => {
   const BASE = '/AOnline/apix';
   const PANEL_ID = 'contador-faltas-panel';
+  // Último dia de aula de cada semestre ("ano-semestre" do portal); depois vêm as provas
+  const ULTIMO_DIA_DE_AULA = { '2026-62': '2026-11-25' };
 
   document.getElementById(PANEL_ID)?.remove();
 
@@ -92,7 +94,10 @@
         const datas = (d.faltasDiarias || []).map((f) => f.data);
         const faltas = nivel.faltasAcumuladas ?? d.totalFaltas ?? datas.length;
 
-        const aulas = aulasPorTurma[m.codigoTurma] || [];
+        // Depois do último dia de aula vêm as provas, que não contam presença
+        const ultimoDia = ULTIMO_DIA_DE_AULA[m.ano + '-' + m.semestre];
+        const limite = ultimoDia ? new Date(ultimoDia + 'T23:59:59-03:00').getTime() : Infinity;
+        const aulas = (aulasPorTurma[m.codigoTurma] || []).filter((a) => a.startDate <= limite);
         // O portal conta aulas e faltas permitidas em horas; cada encontro vale a duração dele (2h)
         const horasPorAula = aulas.length ? Math.round((aulas[0].endDate - aulas[0].startDate) / 3600000) || 1 : 2;
         const previstasPortal = nivel.aulasPrevistas ?? m.aulasPrevistas;
