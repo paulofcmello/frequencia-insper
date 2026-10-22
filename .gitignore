@@ -6,3 +6,5 @@ site/
 *.tmp
 .DS_Store
 compartilhar/*.zip
+.vercel
+.env*

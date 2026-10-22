@@ -179,8 +179,13 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
     if (turma) (aulasPorTurma[turma] ||= []).push(ev);
   }
 
+  // Atividades complementares (AC, ex.: ligas e organizações estudantis) não têm controle de falta
+  const disciplinas = (resumo.content || []).filter(
+    (m) => !/^AC\s*-/i.test(m.componenteCurricular.trim()) && !/^GRAD_AC_/i.test(m.codDisciplina)
+  );
+
   const materias = await Promise.all(
-    (resumo.content || []).map(async (m) => {
+    disciplinas.map(async (m) => {
       const d = await s.json(
         'apix/v2/alunos/' + codAluno + '/detalhes-faltas?ano=' + m.ano + '&semestre=' + m.semestre +
           '&codDisciplina=' + encodeURIComponent(m.codDisciplina) + '&codTurma=' + encodeURIComponent(m.codigoTurma)
@@ -217,7 +222,7 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
     })
   );
   materias.sort((a, b) => folga(a) - folga(b) || a.restantes - b.restantes);
-  const fimAulas = (resumo.content || [])
+  const fimAulas = disciplinas
     .flatMap((m) => limitarAoFimDasAulas(aulasPorTurma[m.codigoTurma] || [], m).map((a) => a.endDate))
     .sort((a, b) => a - b);
   return { materias, fimAulas };

@@ -93,8 +93,12 @@
       if (turma) (aulasPorTurma[turma] = aulasPorTurma[turma] || []).push(ev);
     }
 
+    // Atividades complementares (AC, ex.: ligas e organizações estudantis) não têm controle de falta
+    const disciplinas = (resumo.content || []).filter(
+      (m) => !/^AC\s*-/i.test(m.componenteCurricular.trim()) && !/^GRAD_AC_/i.test(m.codDisciplina)
+    );
     const materias = await Promise.all(
-      (resumo.content || []).map(async (m) => {
+      disciplinas.map(async (m) => {
         const d = await getJSON(
           '/v2/alunos/' + codAluno + '/detalhes-faltas?ano=' + m.ano + '&semestre=' + m.semestre +
             '&codDisciplina=' + encodeURIComponent(m.codDisciplina) + '&codTurma=' + encodeURIComponent(m.codigoTurma)
