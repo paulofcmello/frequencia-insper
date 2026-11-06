@@ -586,7 +586,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .card.mudou { animation:pulsar 1.1s cubic-bezier(.16,1,.3,1) .25s 2; }
   @media (prefers-reduced-motion: reduce) { .barra, .blocos i, .card.mudou { animation:none !important; } }
   .barra.pres { background:var(--pres); }
-  .barra.falt { background:var(--nivel); }
+  /* Falta nunca é verde: laranja normal, vermelho quando a matéria está apertada */
+  .barra.falt { background:var(--medio); } .card.ruim .barra.falt { background:var(--ruim); }
   footer { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:12px; padding-top:10px;
            border-top:1px solid var(--borda); color:var(--sub); font-size:12.5px; }
   .prox { color:var(--txt); margin-bottom:2px; } .prox b { font-weight:600; }
