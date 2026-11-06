@@ -786,6 +786,13 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .legenda .aula::before { background:color-mix(in srgb, var(--pres) 45%, transparent); }
   .premium .cal-feriados, .premium .cal-dica { text-align:center; font-size:11.5px; margin-top:6px; }
   .premium .modo-toque { margin:14px auto 0; }
+  /* Fundo geral: grade de pontinhos que some pra baixo, com uma luz fraca vindo de cima; dá à lente algo nítido pra entortar */
+  .premium body::before { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(circle, rgb(0 0 0 / .17) 1.1px, transparent 1.5px) 0 0 / 20px 20px;
+    -webkit-mask-image:radial-gradient(120% 75% at 50% 0%, #000 25%, transparent 80%); mask-image:radial-gradient(120% 75% at 50% 0%, #000 25%, transparent 80%); }
+  .premium body::after { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(90% 55% at 50% -10%, color-mix(in srgb, var(--pres) 14%, transparent), transparent 70%); }
+  @media (prefers-color-scheme: dark) { .premium body::before { background-image:radial-gradient(circle, rgb(255 255 255 / .14) 1.1px, transparent 1.5px); } }
   /* A cor vem dos dados: cada cartão brilha na cor do estado da matéria (verde tranquila, laranja apertada, vermelho no limite) */
   .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 11%, transparent); --sombra:color-mix(in srgb, var(--nivel) 30%, transparent);
     background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
