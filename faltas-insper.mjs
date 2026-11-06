@@ -306,7 +306,7 @@ function calendario(m) {
     meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
   }
   const listaFeriados = (m.feriados || [])
-    .map((f) => f.dia.split('-').reverse().slice(0, 2).join('/') + ' ' + esc(f.nome))
+    .map((f) => f.dia.split('-').reverse().slice(0, 2).join('/') + ' ' + esc(f.nome.toLowerCase().replace(/(^|\s)(?!(?:de|da|do|das|dos|e)\s)(\p{L})/gu, (_, e, l) => e + l.toUpperCase()))) // portal manda tudo em maiúsculas; nomes próprios ficam com inicial
     .join(' · ');
   // Mostra só o mês atual (ou o mais próximo do semestre); as setas trocam
   let atual = meses.findIndex((x) => !x.includes(' hidden>'));
@@ -776,6 +776,11 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .dias .falta, .premium .dias .hoje.falta { background:var(--ruim); color:#fff; font-weight:600; }
   .premium .dias .feriado { color:var(--sub); }
   .premium .dias .hoje { box-shadow:inset 0 0 0 2px var(--medio); font-weight:700; }
+  /* Marcas do simulador por cima das cores do Premium (vêm depois e com mais peso) */
+  .premium .dias .plano, .premium .dias .plano.hoje, .premium .dias .plano.aula { background:color-mix(in srgb, var(--ruim) 14%, transparent); color:var(--ruim);
+    box-shadow:inset 0 0 0 2px var(--ruim); font-weight:700; }
+  .premium .dias .vou, .premium .dias .vou.hoje, .premium .dias .vou.aula { background:var(--marca); color:#1d1d1f; font-weight:700; box-shadow:none; }
+  .premium .dias .vou.hoje { box-shadow:inset 0 0 0 2px var(--medio); }
   .premium .legenda { justify-content:center; gap:4px 14px; margin-top:16px; font-size:11.5px; }
   .premium .legenda span::before { width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:0; }
   .premium .legenda .aula::before { background:color-mix(in srgb, var(--pres) 45%, transparent); }
