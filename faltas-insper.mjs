@@ -530,7 +530,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   main.personalizada .alca { display:grid; }
   .alca:hover { background:var(--trilho); color:var(--txt); }
   .alca:focus-visible { outline:2px solid var(--pres); outline-offset:1px; }
-  .card.arrastando { position:relative; z-index:2; box-shadow:0 16px 40px -16px rgb(0 0 0 / .35); }
+  .card.arrastando { position:relative; z-index:3; pointer-events:none; box-shadow:0 24px 48px -16px rgb(0 0 0 / .4); }
   body.arrastando, body.arrastando * { cursor:grabbing !important; user-select:none; }
   .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; align-items:start; }
   .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:16px 18px 12px;
@@ -639,6 +639,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     mudar();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     for (const [c, a] of antes) {
+      if (c === arrastando) continue; // esse segue o dedo, não desliza
       const d = c.getBoundingClientRect(), dx = a.left - d.left, dy = a.top - d.top;
       if (dx || dy) c.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { id: 'flip', duration: 250, easing: 'cubic-bezier(.16,1,.3,1)' });
     }
@@ -698,27 +699,42 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     else if ((e.key === 'Enter' || e.key === ' ') && i >= 0) { e.preventDefault(); escolherOrdem(ops[i].dataset.valor); }
   });
   // Personalizada: arrasta pela alça (mouse ou dedo) ou move com as setas do teclado
-  let arrastando = null;
+  let arrastando = null, pega = null; // pega: onde o dedo segurou o cartão
+  // Cartão flutuante: posição da vaga atual + deslocamento até o dedo
+  function seguir(x, y) {
+    arrastando.style.transform = '';
+    const r = arrastando.getBoundingClientRect();
+    arrastando.style.transform = 'translate(' + (x - pega.x - r.left) + 'px,' + (y - pega.y - r.top) + 'px) scale(1.03) rotate(-1deg)';
+  }
   document.addEventListener('pointerdown', (e) => {
     const h = e.target.closest('.alca');
     if (!h) return;
     e.preventDefault();
     arrastando = h.closest('.card');
+    const r = arrastando.getBoundingClientRect();
+    pega = { x: e.clientX - r.left, y: e.clientY - r.top };
     arrastando.classList.add('arrastando');
     document.body.classList.add('arrastando');
+    seguir(e.clientX, e.clientY);
   });
   document.addEventListener('pointermove', (e) => {
     if (!arrastando) return;
-    const alvo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.grade > .card');
-    if (!alvo || alvo === arrastando || alvo.getAnimations().some((a) => a.id === 'flip')) return; // espera o alvo parar de deslizar
-    const lista = cartoes();
-    mover(() => lista.indexOf(arrastando) < lista.indexOf(alvo) ? alvo.after(arrastando) : alvo.before(arrastando));
+    const alvo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.grade > .card'); // o flutuante ignora o ponteiro
+    if (alvo && alvo !== arrastando && !alvo.getAnimations().some((a) => a.id === 'flip')) { // espera o alvo parar de deslizar
+      const lista = cartoes();
+      mover(() => lista.indexOf(arrastando) < lista.indexOf(alvo) ? alvo.after(arrastando) : alvo.before(arrastando));
+    }
+    seguir(e.clientX, e.clientY);
   });
   const soltar = () => {
     if (!arrastando) return;
-    arrastando.classList.remove('arrastando');
-    document.body.classList.remove('arrastando');
+    const c = arrastando, de = c.style.transform;
     arrastando = null;
+    c.style.transform = '';
+    document.body.classList.remove('arrastando');
+    // Pousa na vaga deslizando a partir de onde foi solto
+    const a = c.animate([{ transform: de }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.16,1,.3,1)' });
+    a.onfinish = a.oncancel = () => c.classList.remove('arrastando');
     salvarPersonalizada();
   };
   document.addEventListener('pointerup', soltar);
