@@ -329,12 +329,13 @@ function cartao(m) {
   const f = folga(m);
   const nivel = m.restantes <= 0 || f < 0.25 ? 'ruim' : f < 0.5 ? 'medio' : 'bom';
   const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
-  const heroTitulo = m.restantes < 0
-    ? 'passou ' + -m.restantes + ' do limite'
-    : m.restantes === 0 ? 'não pode mais faltar' : m.aulasRestantes > 0 ? 'pode faltar' : 'aulas encerradas';
-  const heroSub = m.aulasRestantes > 0
-    ? 'de ' + plural(m.aulasRestantes, 'aula restante', 'aulas restantes') + (m.restantes > 0 ? ' · ' + pct + '%' : '')
-    : 'sem aulas restantes';
+  // Lê como frase: "Pode faltar / 4 de 7 aulas restantes"
+  const [heroTitulo, heroNum, heroSub] = m.restantes < 0
+    ? ['Passou do limite', '+' + -m.restantes, -m.restantes === 1 ? 'falta a mais' : 'faltas a mais']
+    : m.aulasRestantes <= 0
+      ? ['Aulas encerradas', '', 'nenhuma aula restante']
+      : [m.restantes === 0 ? 'Não pode mais faltar' : 'Pode faltar', podeFaltar,
+         'de ' + plural(m.aulasRestantes, 'aula restante', 'aulas restantes') + (m.restantes > 0 ? ' · ' + pct + '%' : '')];
   // Um bloco por aula restante: cheios são as que ainda dá pra faltar
   const blocos = Array.from({ length: m.aulasRestantes }, (_, i) => `<i${i < podeFaltar ? ' class="livre"' : ''}></i>`).join('');
   const faltamPresencas = Math.max(0, m.presencasNecessarias - m.presencas);
@@ -348,8 +349,8 @@ function cartao(m) {
     <summary>
     <h2>${esc(nomeBonito(m.nome))}</h2>
     <div class="hero">
-      <span class="big">${podeFaltar}</span>
-      <div class="hero-txt"><b>${heroTitulo}</b><span>${heroSub}</span></div>
+      <b class="hero-titulo">${heroTitulo}</b>
+      <div class="hero-linha">${heroNum !== '' ? `<span class="big">${heroNum}</span>` : ''}<span class="hero-sub">${heroSub}</span></div>
     </div>
     ${blocos ? `<div class="blocos" role="img" aria-label="${podeFaltar} de ${m.aulasRestantes} aulas restantes ainda podem ser faltadas">${blocos}</div>` : ''}
     <div class="stats">
@@ -493,11 +494,11 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .card:hover { box-shadow:0 8px 24px -12px rgb(0 0 0 / .18); }
   summary:focus-visible { outline:2px solid var(--pres); outline-offset:6px; border-radius:10px; }
   h2 { font-size:16px; line-height:1.25; margin:0; letter-spacing:-.01em; text-wrap:balance; }
-  .hero { display:flex; align-items:center; gap:14px; margin-top:14px; }
+  .hero { margin-top:14px; }
+  .hero-titulo { display:block; font-size:15px; color:var(--nivel); margin-bottom:4px; }
+  .hero-linha { display:flex; align-items:baseline; gap:10px; }
   .big { font-size:56px; line-height:.9; font-weight:700; letter-spacing:-.04em; color:var(--nivel); min-width:1ch; }
-  .hero-txt { display:flex; flex-direction:column; line-height:1.25; }
-  .hero-txt b { font-size:16px; color:var(--nivel); }
-  .hero-txt span { color:var(--sub); font-size:13px; }
+  .hero-sub { color:var(--sub); font-size:14px; }
   .blocos { display:flex; gap:4px; margin-top:14px; }
   .blocos i { flex:1; height:10px; border-radius:3px; background:var(--trilho); }
   .blocos i.livre { background:var(--nivel); }
