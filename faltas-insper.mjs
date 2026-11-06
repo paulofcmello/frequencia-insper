@@ -501,7 +501,7 @@ function pagina({ materias, atualizadoEm, erro, fimAulas }, { modo = 'arquivo', 
   </script>`
     : '';
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="premium">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -680,7 +680,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     background:var(--bg); }
   .premium main { max-width:1180px; padding:14px 22px 104px; }
   /* Material de vidro: translúcido, desfoque forte, brilho na borda de cima, sombra macia deslocada */
-  .premium .topo, .premium .card, .premium .versao, .premium .ordem-menu {
+  .premium .topo, .premium .card, .premium .ordem-menu {
     background:var(--vidro); backdrop-filter:blur(28px) saturate(190%); -webkit-backdrop-filter:blur(28px) saturate(190%);
     box-shadow:inset 0 1px 0 var(--brilho), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .04), 0 14px 36px -14px var(--sombra); }
   .premium .card { background:var(--card); }
@@ -747,14 +747,14 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   /* Liquid Glass de verdade (só Chromium, html.lente): a barra e o alternador refratam o que passa por baixo, como lente */
   .premium .ordem-menu { backdrop-filter:none; -webkit-backdrop-filter:none; } /* vidro dentro de vidro quebra */
   /* --lente é um filtro SVG feito sob medida pra cada elemento (tamanho, cantos, tela) pelo script "lentes" */
-  .premium.lente .topo, .premium.lente .versao, .premium.lente .card { backdrop-filter:var(--lente, blur(28px)) saturate(180%); -webkit-backdrop-filter:var(--lente, blur(28px)) saturate(180%); }
+  .premium.lente .topo, .premium.lente .card { backdrop-filter:var(--lente, blur(28px)) saturate(180%); -webkit-backdrop-filter:var(--lente, blur(28px)) saturate(180%); }
   /* Vidro quase incolor: a cor vem do fundo; o que desenha a peça é a borda polida */
   .premium.lente { --card:rgb(255 255 255 / .42); }
   @media (prefers-color-scheme: dark) { .premium.lente { --card:rgb(44 44 46 / .42); } }
-  .premium.lente .topo, .premium.lente .versao { background:linear-gradient(180deg, color-mix(in srgb, var(--bg) 52%, transparent), color-mix(in srgb, var(--bg) 40%, transparent));
+  .premium.lente .topo { background:linear-gradient(180deg, color-mix(in srgb, var(--bg) 52%, transparent), color-mix(in srgb, var(--bg) 40%, transparent));
     box-shadow:inset 0 1px 0 var(--brilho), inset 0 -1px 0 rgb(255 255 255 / .25), inset 1px 0 0 rgb(255 255 255 / .18),
                inset -1px 0 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05), 0 16px 40px -14px var(--sombra); }
-  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao, .premium.lente .card { backdrop-filter:none; } }
+  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .card { backdrop-filter:none; } }
   /* Calendário premium: ocupa o cartão, dias em círculo como no app Calendário, setas no cabeçalho do mês, legenda discreta */
   .premium .cal { position:relative; margin-top:14px; padding-top:16px; font-size:13px; }
   .premium .mes { max-width:none; }
@@ -808,23 +808,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 11%, transparent); --sombra:color-mix(in srgb, var(--nivel) 30%, transparent);
     background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
   @media (prefers-color-scheme: dark) { .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 16%, transparent); --sombra:color-mix(in srgb, var(--nivel) 26%, rgb(0 0 0 / .5)); } }
-  /* Alternador Original / Premium */
-  .versao { touch-action:none; position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
-            display:flex; padding:3px; isolation:isolate; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
-            backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
-            box-shadow:0 0 0 1px var(--borda), 0 10px 30px -10px rgb(0 0 0 / .3); }
-  .premium .versao { background:var(--vidro); }
-  .versao button { font:inherit; font-size:13px; font-weight:600; padding:7px 16px; border:0; border-radius:980px;
-                   background:transparent; color:var(--sub); cursor:pointer; transition:background-color .2s, color .2s, transform .2s; }
-  .versao [aria-pressed=true] { color:var(--bg); }
-  .versao .pilula { position:absolute; top:3px; bottom:3px; left:3px; z-index:-1; border-radius:980px; background:var(--txt);
-                    transition:transform .5s var(--mola), background-color .25s, box-shadow .25s; }
-  .versao.apertando .pilula { transform:scale(1.22, 1.3); background:rgb(255 255 255 / .1); box-shadow:var(--arco); }
-  .versao.apertando [aria-pressed=true] { color:var(--txt); }
-  @media (prefers-reduced-motion: reduce) { .versao .pilula, .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
-  .versao button:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) { .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
 </style>
-<script>try { if (localStorage.versao === 'premium') document.documentElement.classList.add('premium'); } catch {}</script>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
 <script>
@@ -1184,7 +1169,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   defs.setAttribute('width', 0); defs.setAttribute('height', 0); defs.setAttribute('aria-hidden', 'true');
   defs.style.position = 'absolute';
   document.body.append(defs);
-  const BLUR = { topo: 8, versao: 4, card: 6 }; // raio do fosco; vezes 0,35 vira o desvio do gaussiano
+  const BLUR = { topo: 8, card: 6 }; // raio do fosco; vezes 0,35 vira o desvio do gaussiano
   const cache = new Map(); // shortcut: filtros antigos não são apagados; ok pra meia dúzia de tamanhos, refazer com contagem se crescer
   let n = 0;
   const mapa = (w, h, r, pw, ph) => {
@@ -1231,7 +1216,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
     if (!w || !h) return;
     const rr = getComputedStyle(el).borderTopLeftRadius, r = Math.min(rr.endsWith('%') ? parseFloat(rr) / 100 * Math.min(w, h) : parseFloat(rr) || 0, Math.min(w, h) / 2);
-    const tipo = el.classList.contains('topo') ? 'topo' : el.classList.contains('versao') ? 'versao' : 'card';
+    const tipo = el.classList.contains('topo') ? 'topo' : 'card';
     el.style.setProperty('--lente', 'url(#' + filtro(w, h, r, BLUR[tipo]) + ')');
   };
   // Refaz no próximo quadro quando o elemento muda de tamanho (ex.: abrir o calendário) e, com folga, quando a janela muda
@@ -1239,44 +1224,24 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   const agendar = (el) => { fila.add(el); quadro ||= requestAnimationFrame(() => { quadro = 0; fila.forEach(aplicar); fila.clear(); }); };
   const ro = new ResizeObserver((es) => es.forEach((e) => agendar(e.target)));
   const vistos = new WeakSet();
-  const varrer = () => document.querySelectorAll('.topo, .versao, .grade > .card').forEach((el) => { if (!vistos.has(el)) { vistos.add(el); ro.observe(el); } });
+  const varrer = () => document.querySelectorAll('.topo, .grade > .card').forEach((el) => { if (!vistos.has(el)) { vistos.add(el); ro.observe(el); } });
   varrer();
   new MutationObserver(varrer).observe(document.querySelector('main'), { childList: true, subtree: true }); // cartões novos depois de "Atualizar"
   let espera;
-  addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(() => document.querySelectorAll('.topo, .versao, .grade > .card').forEach(agendar), 180); });
+  addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(() => document.querySelectorAll('.topo, .grade > .card').forEach(agendar), 180); });
 })();
 </script>
-<div class="versao" role="group" aria-label="Versão do visual"><span class="pilula" aria-hidden="true"></span>
-  <button type="button" data-v="original">Original</button><button type="button" data-v="premium">Premium</button>
-</div>
 <script>
   (() => {
-    const caixa = document.querySelector('.versao'), pilula = caixa.querySelector('.pilula'), bs = caixa.querySelectorAll('button');
-    const calma = matchMedia('(prefers-reduced-motion: reduce)');
     // Elástico do iOS: quanto mais passa, menos anda (nunca mais que d)
     const elastico = (x, d = 36) => (1 - 1 / (x * .55 / d + 1)) * d;
-    const MOLA = 'linear(0, .08 3%, .3 8%, .62 14%, .88 21%, 1.04 28%, 1.09 34%, 1.08 40%, 1.03 50%, .995 62%, .992 72%, 1)';
-    const marcar = (animar) => {
-      const de = { left: pilula.offsetLeft, width: pilula.offsetWidth };
-      let alvo;
-      bs.forEach((b) => { const sim = document.documentElement.classList.contains('premium') === (b.dataset.v === 'premium'); b.setAttribute('aria-pressed', sim); if (sim) alvo = b; });
-      const para = { left: alvo.offsetLeft, width: alvo.offsetWidth };
-      Object.assign(pilula.style, { left: para.left + 'px', width: para.width + 'px' });
-      if (!animar || calma.matches || !de.width) return;
-      // Estica como gel cobrindo as duas opções no meio do caminho, depois assenta com mola
-      const meio = { left: Math.min(de.left, para.left) + 4, width: Math.abs(para.left - de.left) + Math.min(de.width, para.width) - 8 };
-      const quadros = [{ left: de.left + 'px', width: de.width + 'px' }, { left: para.left + 'px', width: para.width + 'px' }];
-      if (Math.abs(para.left - de.left) > 12) quadros.splice(1, 0, { left: meio.left + 'px', width: meio.width + 'px', offset: .35 });
-      pilula.animate(quadros, { duration: 650, easing: MOLA });
-    };
-        // A lente fica enquanto o dedo segura e some ao soltar (um mínimo de 180 ms pra aparecer num toque rápido)
+    // A lente fica enquanto o dedo segura e some ao soltar (um mínimo de 180 ms pra aparecer num toque rápido)
     let desde = 0;
     const segurar = (el, classe) => el.addEventListener('pointerdown', () => {
       desde = Date.now(); el.classList.add(classe);
       const fim = () => { setTimeout(() => el.classList.remove(classe), Math.max(0, 180 - (Date.now() - desde))); removeEventListener('pointerup', fim); removeEventListener('pointercancel', fim); };
       addEventListener('pointerup', fim); addEventListener('pointercancel', fim);
     });
-    segurar(caixa, 'apertando');
     // Holofote: os pontinhos perto do mouse/dedo crescem, seguindo com leve atraso
     const luz = document.createElement('div'); luz.className = 'holofote'; luz.setAttribute('aria-hidden', 'true');
     document.body.prepend(luz);
@@ -1314,41 +1279,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       sim.addEventListener('pointercancel', () => fim(false));
       sim.addEventListener('click', (e) => { if (ignorar) { ignorar = false; e.stopImmediatePropagation(); e.preventDefault(); } });
     }
-    const escolher = (v) => {
-      document.documentElement.classList.toggle('premium', v === 'premium');
-      try { localStorage.versao = v; } catch {}
-      marcar(true);
-    };
-    let arrasto = null;
-    bs.forEach((b) => b.onclick = (e) => { if (e.detail === 0) escolher(b.dataset.v); }); // teclado; o toque é tratado no largar
-    // Arrastar a pílula de uma opção pra outra; ao soltar, fica na opção mais perto do centro dela
-    caixa.addEventListener('pointerdown', (e) => {
-      arrasto = { x: e.clientX, left: pilula.offsetLeft, w: pilula.offsetWidth, moveu: false, botao: e.target.closest('button'), v: 0, ux: e.clientX, ut: e.timeStamp };
-      caixa.setPointerCapture(e.pointerId);
-    });
-    caixa.addEventListener('pointermove', (e) => {
-      if (!arrasto) return;
-      const dx = e.clientX - arrasto.x;
-      if (Math.abs(dx) > 3) arrasto.moveu = true;
-      if (!arrasto.moveu) return;
-      arrasto.v = (e.clientX - arrasto.ux) / Math.max(1, e.timeStamp - arrasto.ut); arrasto.ux = e.clientX; arrasto.ut = e.timeStamp;
-      // Passou da ponta: continua um pouco esticando, cada vez mais devagar, como líquido
-      const max = caixa.clientWidth - arrasto.w - 3, x = arrasto.left + dx;
-      const sobra = x > max ? elastico(x - max) : x < 3 ? elastico(3 - x) : 0;
-      pilula.style.left = (x > max ? max : x < 3 ? 3 - sobra : x) + 'px';
-      pilula.style.width = arrasto.w + sobra + 'px';
-    });
-    const largar = () => {
-      if (!arrasto) return;
-      const { moveu, botao, v: arrasto_v } = arrasto; arrasto = null;
-      if (!moveu) return botao && escolher(botao.dataset.v); // toque simples (com captura do ponteiro, o clique não chega no botão)
-      const centro = pilula.offsetLeft + pilula.offsetWidth / 2 + arrasto_v * 120; // inércia: um gesto rápido escolhe pra onde ia
-      const perto = [...bs].sort((p, q) => Math.abs(p.offsetLeft + p.offsetWidth / 2 - centro) - Math.abs(q.offsetLeft + q.offsetWidth / 2 - centro))[0];
-      escolher(perto.dataset.v);
-    };
-    caixa.addEventListener('pointerup', largar);
-    caixa.addEventListener('pointercancel', () => { if (arrasto) { arrasto = null; marcar(true); } }); // volta pro lugar
-    marcar(false);
     // Luz do toque: o botão acende a partir do ponto onde o dedo encostou
     document.addEventListener('pointerdown', (e) => {
       const b = e.target.closest?.('#ordem, #so-hoje, #atualizar');
