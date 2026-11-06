@@ -799,8 +799,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .sim b { color:var(--txt); font-weight:600; }
   .premium .limpar-sim { padding:2px 9px; border-radius:980px; background:var(--card); color:var(--pres); text-decoration:none; font-weight:600;
                          box-shadow:0 1px 2px rgb(0 0 0 / .08); }
-  /* Melhores dias pra faltar: três cartõezinhos de vidro acima da grade */
-  .melhores { margin:0 0 22px; }
+  /* Melhores dias pra faltar: três cartõezinhos de vidro abaixo da grade */
+  .melhores { margin:28px 0 0; }
   .melhores h2 { font-size:15px; font-weight:650; color:var(--sub); margin:0 0 10px 4px; letter-spacing:-.01em; }
   .melhores ol { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:0; padding:0; list-style:none; }
   .melhores li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:14px 18px; border-radius:20px;
@@ -973,7 +973,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       ? '<ol>' + bons.map((x) => '<li><b>' + dataBR(x.d) + '</b><span>' + plural(x.aulas, 'aula') + '</span><small>' +
           x.itens.map((i) => escH(i.nome) + ' · ainda sobram ' + i.sobra).join('<br>') + '</small></li>').join('') + '</ol>'
       : '<p>Nenhum dia nas próximas 3 semanas cabe na folga de todas as matérias.</p>');
-    grade.before(sec);
+    grade.after(sec);
   }
   addEventListener('DOMContentLoaded', melhoresDias);
   function marcar(b, tipo) { b.classList.toggle('plano', tipo === 'plano'); b.classList.toggle('vou', tipo === 'vou'); b.setAttribute('aria-pressed', !!tipo); }
