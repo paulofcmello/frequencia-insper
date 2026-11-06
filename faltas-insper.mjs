@@ -323,7 +323,11 @@ const nomeBonito = (s) => String(s).toLowerCase().split(' ')
 const seta = (d) => `<svg class="seta" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SETA_BAIXO = seta('M4 6l4 4 4-4'), SETA_ESQ = seta('M10 4L6 8l4 4'), SETA_DIR = seta('M6 4l4 4-4 4');
 
-function cartao(m) {
+const ALCA = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">'
+  + [[6, 4], [10, 4], [6, 8], [10, 8], [6, 12], [10, 12]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="currentColor"/>`).join('')
+  + '</svg>';
+
+function cartao(m, i) {
   const podeFaltar = Math.max(0, Math.min(m.restantes, m.aulasRestantes));
   const pct = m.aulasRestantes > 0 ? Math.round((podeFaltar / m.aulasRestantes) * 100) : 0;
   const f = folga(m);
@@ -345,9 +349,12 @@ function cartao(m) {
   const curta = (t, opc) => esc(dataBR(t, opc).replace('.', ''));
 
   return `
-  <details class="card ${nivel}">
+  <details class="card ${nivel}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}">
     <summary>
-    <h2>${esc(nomeBonito(m.nome))}</h2>
+    <div class="cab">
+      <h2>${esc(nomeBonito(m.nome))}</h2>
+      <button type="button" class="alca" aria-label="Mover ${esc(nomeBonito(m.nome))} (arraste ou use as setas)">${ALCA}</button>
+    </div>
     <div class="hero">
       <b class="hero-titulo">${heroTitulo}</b>
       <div class="hero-linha">${heroNum !== '' ? `<span class="big">${heroNum}</span>` : ''}<span class="hero-sub">${heroSub}</span></div>
@@ -488,6 +495,17 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   h1 { font-size:28px; line-height:1.1; letter-spacing:-.025em; margin:0; }
   .sub { color:var(--sub); margin:0; font-size:14px; text-wrap:pretty; }
   .titulo { display:flex; align-items:baseline; gap:2px 14px; flex-wrap:wrap; }
+  .ordem { display:inline-flex; align-items:center; gap:6px; color:var(--sub); font-size:14px; }
+  .ordem select { font:inherit; color:var(--txt); background:var(--card); border:1px solid var(--borda); border-radius:8px; padding:3px 6px; cursor:pointer; }
+  .ordem select:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  .cab { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
+          background:transparent; color:var(--sub); cursor:grab; touch-action:none; }
+  main.personalizada .alca { display:grid; }
+  .alca:hover { background:var(--trilho); color:var(--txt); }
+  .alca:focus-visible { outline:2px solid var(--pres); outline-offset:1px; }
+  .card.arrastando { position:relative; z-index:2; box-shadow:0 16px 40px -16px rgb(0 0 0 / .35); }
+  body.arrastando, body.arrastando * { cursor:grabbing !important; user-select:none; }
   .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; align-items:start; }
   .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:16px 18px 12px;
           transition:box-shadow .2s cubic-bezier(.16,1,.3,1); }
@@ -576,7 +594,83 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     main.replaceChildren(main.querySelector('.topo'), ...[...novo.querySelector('main').children].filter((e) => !e.matches('.topo')));
     main.querySelector('.sub').replaceWith(novo.querySelector('.sub')); // horário de atualização fica no .topo
     document.body.dataset.atualizado = novo.body.dataset.atualizado;
+    aplicarOrdem(false);
   }
+  // Ordem dos cartões: escolhida no seletor e lembrada só neste navegador
+  const CHAVE_ORDEM = 'frequencia-ordem';
+  const lerOrdem = () => { try { return JSON.parse(localStorage.getItem(CHAVE_ORDEM)) || {}; } catch { return {}; } };
+  const salvarOrdem = (o) => { try { localStorage.setItem(CHAVE_ORDEM, JSON.stringify(o)); } catch {} };
+  const cartoes = () => [...document.querySelectorAll('.grade > .card')];
+  const CRITERIOS = {
+    risco: (a, b) => a.dataset.i - b.dataset.i, // o servidor já manda nessa ordem
+    pode: (a, b) => a.dataset.pode - b.dataset.pode || a.dataset.i - b.dataset.i,
+    prox: (a, b) => (+a.dataset.prox || Infinity) - (+b.dataset.prox || Infinity) || a.dataset.i - b.dataset.i,
+    nome: (a, b) => a.dataset.nome.localeCompare(b.dataset.nome, 'pt-BR'),
+  };
+  // Anima os cartões da posição antiga pra nova (FLIP)
+  function mover(mudar) {
+    const antes = new Map(cartoes().map((c) => [c, c.getBoundingClientRect()]));
+    mudar();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    for (const [c, a] of antes) {
+      const d = c.getBoundingClientRect(), dx = a.left - d.left, dy = a.top - d.top;
+      if (dx || dy) c.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { id: 'flip', duration: 250, easing: 'cubic-bezier(.16,1,.3,1)' });
+    }
+  }
+  function aplicarOrdem(animar) {
+    const grade = document.querySelector('.grade');
+    if (!grade) return;
+    const o = lerOrdem(), modo = (CRITERIOS[o.modo] || o.modo === 'custom') ? o.modo : 'risco';
+    document.getElementById('ordem').value = modo;
+    document.querySelector('main').classList.toggle('personalizada', modo === 'custom');
+    const pos = new Map((o.lista || []).map((n, i) => [n, i])); // matéria nova vai pro fim
+    const cmp = CRITERIOS[modo] || ((a, b) => (pos.get(a.dataset.nome) ?? 1e9) - (pos.get(b.dataset.nome) ?? 1e9) || a.dataset.i - b.dataset.i);
+    const reordenar = () => cartoes().sort(cmp).forEach((c) => grade.append(c));
+    animar ? mover(reordenar) : reordenar();
+  }
+  const salvarPersonalizada = () => salvarOrdem({ modo: 'custom', lista: cartoes().map((c) => c.dataset.nome) });
+  document.addEventListener('DOMContentLoaded', () => aplicarOrdem(false));
+  document.addEventListener('change', (e) => {
+    if (e.target.id !== 'ordem') return;
+    const o = lerOrdem();
+    salvarOrdem({ modo: e.target.value, lista: o.lista?.length ? o.lista : cartoes().map((c) => c.dataset.nome) });
+    aplicarOrdem(true);
+  });
+  // Personalizada: arrasta pela alça (mouse ou dedo) ou move com as setas do teclado
+  let arrastando = null;
+  document.addEventListener('pointerdown', (e) => {
+    const h = e.target.closest('.alca');
+    if (!h) return;
+    e.preventDefault();
+    arrastando = h.closest('.card');
+    arrastando.classList.add('arrastando');
+    document.body.classList.add('arrastando');
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!arrastando) return;
+    const alvo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.grade > .card');
+    if (!alvo || alvo === arrastando || alvo.getAnimations().some((a) => a.id === 'flip')) return; // espera o alvo parar de deslizar
+    const lista = cartoes();
+    mover(() => lista.indexOf(arrastando) < lista.indexOf(alvo) ? alvo.after(arrastando) : alvo.before(arrastando));
+  });
+  const soltar = () => {
+    if (!arrastando) return;
+    arrastando.classList.remove('arrastando');
+    document.body.classList.remove('arrastando');
+    arrastando = null;
+    salvarPersonalizada();
+  };
+  document.addEventListener('pointerup', soltar);
+  document.addEventListener('pointercancel', soltar);
+  document.addEventListener('keydown', (e) => {
+    const h = e.target.closest?.('.alca'), passo = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[e.key];
+    if (!h || !passo) return;
+    e.preventDefault();
+    const c = h.closest('.card');
+    mover(() => passo < 0 ? c.previousElementSibling?.before(c) : c.nextElementSibling?.after(c));
+    h.focus();
+    salvarPersonalizada();
+  });
   // Site multiusuário: o link "Atualizar" busca os dados sem sair da página
   document.addEventListener('click', async (e) => {
     const a = e.target.closest('a#atualizar');
@@ -588,6 +682,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   });
   // Abre e fecha o calendário deslizando (o <details> sozinho só pula)
   document.addEventListener('click', (e) => {
+    if (e.target.closest('.alca')) return e.preventDefault(); // alça de arrastar não abre o calendário
     const s = e.target.closest('.card > summary');
     if (!s || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     e.preventDefault();
@@ -611,7 +706,16 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   <div class="topo">
     <div class="titulo">
       <h1>Frequência</h1>
-      <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)} · ordenado por quanto ainda dá pra faltar</p>
+      <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)}</p>
+      <label class="ordem">Ordenar por
+        <select id="ordem">
+          <option value="risco">risco (% que dá pra faltar)</option>
+          <option value="pode">menos faltas sobrando</option>
+          <option value="prox">próxima aula</option>
+          <option value="nome">nome</option>
+          <option value="custom">personalizada (arrastar)</option>
+        </select>
+      </label>
     </div>
     ${botao}
   </div>
