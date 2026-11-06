@@ -750,7 +750,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
                inset -1px 0 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05), 0 16px 40px -14px var(--sombra); }
   @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao { backdrop-filter:none; } }
   /* Alternador Original / Premium */
-  .versao { position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
+  .versao { touch-action:none; position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
             display:flex; padding:3px; isolation:isolate; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
             backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
             box-shadow:0 0 0 1px var(--borda), 0 10px 30px -10px rgb(0 0 0 / .3); }
@@ -1138,11 +1138,36 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     });
     segurar(caixa, 'apertando');
     const sim = document.querySelector('#simulador'); if (sim) segurar(sim, 'apertado');
-    bs.forEach((b) => b.onclick = () => {
-      document.documentElement.classList.toggle('premium', b.dataset.v === 'premium');
-      try { localStorage.versao = b.dataset.v; } catch {}
+    const escolher = (v) => {
+      document.documentElement.classList.toggle('premium', v === 'premium');
+      try { localStorage.versao = v; } catch {}
       marcar(true);
+    };
+    let arrasto = null;
+    bs.forEach((b) => b.onclick = (e) => { if (e.detail === 0) escolher(b.dataset.v); }); // teclado; o toque é tratado no largar
+    // Arrastar a pílula de uma opção pra outra; ao soltar, fica na opção mais perto do centro dela
+    caixa.addEventListener('pointerdown', (e) => {
+      arrasto = { x: e.clientX, left: pilula.offsetLeft, moveu: false, botao: e.target.closest('button') };
+      caixa.setPointerCapture(e.pointerId);
     });
+    caixa.addEventListener('pointermove', (e) => {
+      if (!arrasto) return;
+      const dx = e.clientX - arrasto.x;
+      if (Math.abs(dx) > 3) arrasto.moveu = true;
+      if (!arrasto.moveu) return;
+      const max = caixa.clientWidth - pilula.offsetWidth - 3;
+      pilula.style.left = Math.min(max, Math.max(3, arrasto.left + dx)) + 'px';
+    });
+    const largar = () => {
+      if (!arrasto) return;
+      const { moveu, botao } = arrasto; arrasto = null;
+      if (!moveu) return botao && escolher(botao.dataset.v); // toque simples (com captura do ponteiro, o clique não chega no botão)
+      const centro = pilula.offsetLeft + pilula.offsetWidth / 2;
+      const perto = [...bs].sort((p, q) => Math.abs(p.offsetLeft + p.offsetWidth / 2 - centro) - Math.abs(q.offsetLeft + q.offsetWidth / 2 - centro))[0];
+      escolher(perto.dataset.v);
+    };
+    caixa.addEventListener('pointerup', largar);
+    caixa.addEventListener('pointercancel', () => { if (arrasto) { arrasto = null; marcar(true); } }); // volta pro lugar
     marcar(false);
     // Luz do toque: o botão acende a partir do ponto onde o dedo encostou
     document.addEventListener('pointerdown', (e) => {
