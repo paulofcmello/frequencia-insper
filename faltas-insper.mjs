@@ -719,6 +719,12 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   @media (max-width:640px) { .premium .topo { border-radius:22px; padding:12px 14px; position:relative; top:0; } /* no celular ocupa muito pra ficar grudado */ .premium main { padding-inline:14px; } }
   @media (prefers-reduced-motion: reduce) { .premium body:not(.arrastando) .card:hover { transform:none; } }
   @media (prefers-reduced-transparency: reduce) { html.premium { --vidro:var(--bg); --card:var(--bg); } }
+  /* Liquid Glass de verdade (só Chromium, html.lente): a barra e o alternador refratam o que passa por baixo, como lente */
+  .premium .ordem-menu { backdrop-filter:none; -webkit-backdrop-filter:none; } /* vidro dentro de vidro quebra */
+  .premium.lente .topo, .premium.lente .versao { backdrop-filter:url(#lente) blur(5px) saturate(190%) brightness(1.04);
+    box-shadow:inset 0 1px 0 var(--brilho), inset 0 -1px 0 rgb(255 255 255 / .25), inset 1px 0 0 rgb(255 255 255 / .18),
+               inset -1px 0 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05), 0 16px 40px -14px var(--sombra); }
+  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao { backdrop-filter:none; } }
   /* Alternador Original / Premium */
   .versao { position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
             display:flex; padding:3px; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
@@ -1073,6 +1079,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   <p class="vazio-hoje" hidden>Sem aulas hoje.</p>
   ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
 </main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lente" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='x'%3E%3Cstop offset='0' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient id='y' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%230f0'/%3E%3C/linearGradient%3E%3Cfilter id='b'%3E%3CfeGaussianBlur stdDeviation='3'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23x)'/%3E%3Crect width='100' height='100' fill='url(%23y)' style='mix-blend-mode:screen'/%3E%3Crect x='5' y='20' width='90' height='60' rx='8' fill='rgb(128,128,0)' filter='url(%23b)'/%3E%3C/svg%3E" preserveAspectRatio="none" result="mapa"/><feDisplacementMap in="SourceGraphic" in2="mapa" scale="40" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
+<script>if (navigator.userAgentData) document.documentElement.classList.add('lente'); // backdrop-filter com url() só funciona no Chromium</script>
 <div class="versao" role="group" aria-label="Versão do visual">
   <button type="button" data-v="original">Original</button><button type="button" data-v="premium">Premium</button>
 </div>
