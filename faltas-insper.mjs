@@ -713,10 +713,13 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium #ordem:active, .premium #so-hoje:active, .premium #atualizar:active, .premium #ordem[aria-expanded=true] { transform:scale(1.08); --luz:rgb(255 255 255 / .7); }
   @property --luz { syntax:'<color>'; inherits:false; initial-value:transparent; }
   /* Switch do iOS 26: ao apertar, a bolinha vira uma lente de vidro larga e desliza com mola */
-  .premium #simulador::after { transition:transform .5s var(--mola), width .35s var(--mola), left .5s var(--mola), background-color .25s, box-shadow .25s; }
-  .premium #simulador:active::after { width:28px; background:rgb(255 255 255 / .5); transform:scale(1.15);
-    box-shadow:inset 0 1px 0 #fff, inset 0 0 0 1px rgb(255 255 255 / .6), 0 4px 12px rgb(0 0 0 / .22); }
-  .premium #simulador[aria-checked=true]:active::after { transform:translateX(6px) scale(1.15); }
+  /* Borda de vidro com aberração cromática (o arco-íris fino nas bordas da lente) */
+  html { --arco:inset 0 1.5px 0 rgb(255 255 255 / .95), inset 2px 0 1px -1px rgb(255 90 120 / .7), inset -2px 0 1px -1px rgb(80 170 255 / .7),
+                inset 0 -1.5px 1px -.5px rgb(120 255 200 / .55), inset 0 0 0 1px rgb(255 255 255 / .35), 0 8px 22px -4px rgb(0 0 0 / .3); }
+  .premium #simulador::after { transition:transform .5s var(--mola), width .45s var(--mola), height .45s var(--mola), left .45s var(--mola),
+                                         top .45s var(--mola), background-color .25s, box-shadow .25s; }
+  /* Enquanto o dedo segura: a bolinha vira uma lente de vidro maior que o trilho, e só volta ao soltar */
+  .premium #simulador.apertado::after { top:-5px; left:-10px; width:42px; height:32px; background:rgb(255 255 255 / .1); box-shadow:var(--arco); }
   .premium #atualizar { padding:9px 20px; }
   .premium .sair { border:0; background:transparent; }
   .premium .sair:hover { color:var(--txt); }
@@ -757,8 +760,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .versao [aria-pressed=true] { color:var(--bg); }
   .versao .pilula { position:absolute; top:3px; bottom:3px; left:3px; z-index:-1; border-radius:980px; background:var(--txt);
                     transition:transform .5s var(--mola), background-color .25s, box-shadow .25s; }
-  .versao.apertando .pilula { transform:scale(1.14); background:color-mix(in srgb, var(--txt) 30%, transparent);
-    box-shadow:inset 0 1px 0 rgb(255 255 255 / .7), inset 0 0 0 1px rgb(255 255 255 / .4), 0 8px 20px -6px rgb(0 0 0 / .35); }
+  .versao.apertando .pilula { transform:scale(1.22, 1.3); background:rgb(255 255 255 / .1); box-shadow:var(--arco); }
   .versao.apertando [aria-pressed=true] { color:var(--txt); }
   @media (prefers-reduced-motion: reduce) { .versao .pilula, .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
   .versao button:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
@@ -1127,9 +1129,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       pilula.animate([{ left: de.left + 'px', width: de.width + 'px' }, { left: meio.left + 'px', width: meio.width + 'px', offset: .4 },
                       { left: para.left + 'px', width: para.width + 'px' }], { duration: 520, easing: 'cubic-bezier(.3,1.25,.5,1)' });
     };
-    caixa.addEventListener('pointerdown', () => caixa.classList.add('apertando'));
-    const soltar = () => setTimeout(() => caixa.classList.remove('apertando'), 220); // segura um pouco pra lente aparecer num toque rápido
-    caixa.addEventListener('pointerup', soltar); caixa.addEventListener('pointercancel', soltar); caixa.addEventListener('pointerleave', soltar);
+        // A lente fica enquanto o dedo segura e some ao soltar (um mínimo de 180 ms pra aparecer num toque rápido)
+    let desde = 0;
+    const segurar = (el, classe) => el.addEventListener('pointerdown', () => {
+      desde = Date.now(); el.classList.add(classe);
+      const fim = () => { setTimeout(() => el.classList.remove(classe), Math.max(0, 180 - (Date.now() - desde))); removeEventListener('pointerup', fim); removeEventListener('pointercancel', fim); };
+      addEventListener('pointerup', fim); addEventListener('pointercancel', fim);
+    });
+    segurar(caixa, 'apertando');
+    const sim = document.querySelector('#simulador'); if (sim) segurar(sim, 'apertado');
     bs.forEach((b) => b.onclick = () => {
       document.documentElement.classList.toggle('premium', b.dataset.v === 'premium');
       try { localStorage.versao = b.dataset.v; } catch {}
