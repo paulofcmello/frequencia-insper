@@ -793,29 +793,17 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium body::after { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
     background:radial-gradient(90% 55% at 50% -10%, color-mix(in srgb, var(--pres) 14%, transparent), transparent 70%); }
   @media (prefers-color-scheme: dark) { .premium body::before { background-image:radial-gradient(circle, rgb(255 255 255 / .14) 1.1px, transparent 1.5px); } }
-  /* Fundos alternativos, escolhidos no botão "Fundo" (html[data-fundo]) */
-  .premium[data-fundo=calendario] body::before { --linha:rgb(0 0 0 / .1);
-    background:linear-gradient(90deg, var(--linha) 1px, transparent 1px) 0 0 / calc(100% / 7) 100%,
-               linear-gradient(var(--linha) 1px, transparent 1px) 0 0 / 100% calc(100vw / 7); }
-  @media (prefers-color-scheme: dark) { .premium[data-fundo=calendario] body::before { --linha:rgb(255 255 255 / .1); } }
+  /* Holofote: os pontinhos perto do mouse/dedo crescem e escurecem, seguindo com leve atraso */
   @property --mx { syntax:'<length>'; inherits:false; initial-value:-999px; }
   @property --my { syntax:'<length>'; inherits:false; initial-value:-999px; }
   .holofote { display:none; }
-  .premium[data-fundo=holofote] .holofote { display:block; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  .premium .holofote { display:block; position:fixed; inset:0; z-index:-1; pointer-events:none;
     background:radial-gradient(circle, rgb(0 0 0 / .38) 1.7px, transparent 2.1px) 0 0 / 20px 20px;
     -webkit-mask-image:radial-gradient(170px circle at var(--mx) var(--my), #000, transparent);
     mask-image:radial-gradient(170px circle at var(--mx) var(--my), #000, transparent);
     transition:--mx .35s cubic-bezier(.16,1,.3,1), --my .35s cubic-bezier(.16,1,.3,1); }
-  @media (prefers-color-scheme: dark) { .premium[data-fundo=holofote] .holofote { background-image:radial-gradient(circle, rgb(255 255 255 / .4) 1.7px, transparent 2.1px); } }
+  @media (prefers-color-scheme: dark) { .premium .holofote { background-image:radial-gradient(circle, rgb(255 255 255 / .4) 1.7px, transparent 2.1px); } }
   @media (prefers-reduced-motion: reduce) { .premium .holofote { transition:none; } }
-  .fundo-btn { display:none; }
-  .premium .fundo-btn { display:block; position:fixed; z-index:20; right:16px; bottom:max(18px, env(safe-area-inset-bottom));
-    font:inherit; font-size:13px; font-weight:600; color:var(--txt); padding:9px 14px; border:0; border-radius:980px; cursor:pointer;
-    background:var(--vidro); backdrop-filter:blur(28px) saturate(190%); -webkit-backdrop-filter:blur(28px) saturate(190%);
-    box-shadow:inset 0 1px 0 var(--brilho), inset 0 0 0 1px var(--borda), 0 10px 30px -10px rgb(0 0 0 / .3); transition:transform .4s var(--mola); }
-  .premium .fundo-btn:active { transform:scale(1.08); }
-  .premium .fundo-btn:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
-  .fundo-btn span { color:var(--sub); font-weight:500; }
   /* A cor vem dos dados: cada cartão brilha na cor do estado da matéria (verde tranquila, laranja apertada, vermelho no limite) */
   .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 11%, transparent); --sombra:color-mix(in srgb, var(--nivel) 30%, transparent);
     background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
@@ -836,7 +824,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   @media (prefers-reduced-motion: reduce) { .versao .pilula, .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
   .versao button:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
 </style>
-<script>try { if (localStorage.versao === 'premium') document.documentElement.classList.add('premium'); document.documentElement.dataset.fundo = localStorage.fundo || 'pontos'; } catch { document.documentElement.dataset.fundo = 'pontos'; }</script>
+<script>try { if (localStorage.versao === 'premium') document.documentElement.classList.add('premium'); } catch {}</script>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
 <script>
@@ -1289,16 +1277,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       addEventListener('pointerup', fim); addEventListener('pointercancel', fim);
     });
     segurar(caixa, 'apertando');
-    // Botão "Fundo": troca entre pontinhos, calendário fantasma e holofote
-    const FUNDOS = { pontos: 'Pontinhos', calendario: 'Calendário', holofote: 'Holofote' };
-    const fb = document.createElement('button'); fb.type = 'button'; fb.className = 'fundo-btn';
-    const rotular = () => { fb.innerHTML = '<span>Fundo:</span> ' + FUNDOS[document.documentElement.dataset.fundo]; };
-    fb.onclick = () => {
-      const ks = Object.keys(FUNDOS), prox = ks[(ks.indexOf(document.documentElement.dataset.fundo) + 1) % ks.length];
-      document.documentElement.dataset.fundo = prox; try { localStorage.fundo = prox; } catch {}
-      rotular();
-    };
-    rotular(); document.body.append(fb);
     // Holofote: os pontinhos perto do mouse/dedo crescem, seguindo com leve atraso
     const luz = document.createElement('div'); luz.className = 'holofote'; luz.setAttribute('aria-hidden', 'true');
     document.body.prepend(luz);
