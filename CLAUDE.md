@@ -3,20 +3,18 @@
 Contador de presenças/faltas por matéria a partir do Aluno Online do Insper (Lyceum, `sga.insper.edu.br/AOnline`).
 Mostra: aulas restantes, presenças X/Y, faltas X/limite e "pode faltar N/restantes (%)". Textos da UI em português.
 
-## Três versões, mesmo núcleo (`faltas-insper.mjs`)
+## Duas versões, mesmo núcleo (`faltas-insper.mjs`)
 
 | Versão | Onde | Credenciais |
 |---|---|---|
 | Site multiusuário | https://frequencia-insper.vercel.app (`api/index.mjs`) | cada pessoa digita a própria; servidor não guarda senha |
-| Página do Paulo | https://paulofcmello.github.io/frequencia-insper/ (`.github/workflows/atualizar.yml`, modo `--github`) | Secrets `INSPER_LOGIN` / `INSPER_SENHA` |
 | Favorito (bookmarklet) | `contador-faltas.js` → `bookmarklet.txt` / `favorito-faltas.html` | roda dentro do portal logado |
 
-Também existem: modo `--servidor` (servidor local em `frequencia.localhost:4870`, desativado) e `compartilhar/` (instalador pro Mac de outra pessoa).
+Também existem: modo `--github` + `.github/workflows/atualizar.yml` (GitHub Pages, não usado mais), modo `--servidor` (servidor local em `frequencia.localhost:4870`, desativado) e `compartilhar/` (instalador pro Mac de outra pessoa).
 
 ## Fluxo de deploy
 
 - `git push` na `main` → Vercel publica sozinha (Git conectado). Projeto Vercel: `pfc18/frequencia-insper`, env `SEGREDO`.
-- GitHub Pages só muda quando o workflow roda (agendado depois das aulas, ou `gh workflow run atualizar.yml -R paulofcmello/frequencia-insper`).
 - Ao mudar `contador-faltas.js`, regerar `bookmarklet.txt` e `favorito-faltas.html` (tira linhas `//`, junta com espaço, `encodeURIComponent`).
 - Ao mudar lógica de cálculo, mudar nos dois: `faltas-insper.mjs` e `contador-faltas.js`.
 
@@ -46,5 +44,4 @@ Também existem: modo `--servidor` (servidor local em `frequencia.localhost:4870
 ## Testar
 
 - `node faltas-insper.mjs` — atualiza local (usa Keychain `insper-aonline`).
-- `TZ=America/Sao_Paulo FORCAR=true node faltas-insper.mjs --github` — gera `site/` (apagar depois).
 - Site: importar `api/index.mjs` num `http.createServer` local com `SEGREDO` qualquer.
