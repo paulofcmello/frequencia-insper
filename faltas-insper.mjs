@@ -327,6 +327,16 @@ const ALCA = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"
   + [[6, 4], [10, 4], [6, 8], [10, 8], [6, 12], [10, 12]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="currentColor"/>`).join('')
   + '</svg>';
 
+// Opções do menu de ordem: valor, nome e o que significa
+const OPCOES_ORDEM = [
+  ['risco', '% que dá pra faltar', 'menor % das aulas restantes primeiro'],
+  ['pode', 'Faltas sobrando', 'menos faltas livres primeiro'],
+  ['prox', 'Próxima aula', 'a aula mais cedo primeiro'],
+  ['nome', 'Nome', 'ordem alfabética'],
+  ['custom', 'Personalizada', 'arraste os cartões pela alça'],
+];
+const CHECK = '<svg class="check" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 function cartao(m, i) {
   const podeFaltar = Math.max(0, Math.min(m.restantes, m.aulasRestantes));
   const pct = m.aulasRestantes > 0 ? Math.round((podeFaltar / m.aulasRestantes) * 100) : 0;
@@ -496,15 +506,24 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .sub { color:var(--sub); margin:0; font-size:14px; text-wrap:pretty; }
   .titulo { display:flex; align-items:baseline; gap:2px 14px; flex-wrap:wrap; }
   /* Botão de menu no estilo do macOS: pílula cinza, ícone, valor atual e chevron duplo; o menu aberto é o nativo */
-  .ordem { position:relative; display:inline-flex; align-items:center; align-self:center; color:var(--sub); }
-  .ordem svg { position:absolute; pointer-events:none; }
-  .ordem .ic { left:10px; } .ordem .ch { right:10px; }
-  .ordem select { appearance:none; -webkit-appearance:none; font:inherit; font-size:13px; font-weight:500; color:var(--txt);
-                  background:var(--trilho); border:0; border-radius:980px; padding:5px 28px 5px 29px; cursor:pointer; field-sizing:content;
-                  transition:background-color .15s; }
-  .ordem select:hover { background:color-mix(in srgb, var(--trilho) 88%, var(--txt)); }
-  .ordem select:active { background:color-mix(in srgb, var(--trilho) 80%, var(--txt)); }
-  .ordem select:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  .ordem { position:relative; display:inline-flex; align-items:center; align-self:center; gap:6px; color:var(--sub); font-size:14px; }
+  #ordem { display:inline-flex; align-items:center; gap:3px; font:inherit; font-size:13px; font-weight:600; color:var(--txt);
+           background:var(--trilho); border:0; border-radius:980px; padding:4px 8px 4px 12px; cursor:pointer; transition:background-color .15s; }
+  #ordem:hover, #ordem[aria-expanded=true] { background:color-mix(in srgb, var(--trilho) 86%, var(--txt)); }
+  #ordem:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  #ordem[aria-expanded=true] .seta { transform:rotate(180deg); }
+  .ordem-menu { position:absolute; top:calc(100% + 6px); left:0; z-index:10; min-width:260px; margin:0; padding:6px; list-style:none;
+                background:var(--card); border-radius:14px; box-shadow:0 0 0 1px var(--borda), 0 16px 36px -12px rgb(0 0 0 / .28);
+                transform-origin:top left; transition:opacity .18s cubic-bezier(.16,1,.3,1), transform .18s cubic-bezier(.16,1,.3,1); }
+  @starting-style { .ordem-menu { opacity:0; transform:translateY(-4px) scale(.97); } }
+  .ordem-menu li { display:grid; grid-template-columns:1fr auto; column-gap:14px; align-items:center; padding:7px 10px;
+                   border-radius:9px; cursor:pointer; outline:none; line-height:1.3; }
+  .ordem-menu li:hover, .ordem-menu li:focus { background:var(--trilho); }
+  .ordem-menu b { font-size:14px; font-weight:500; color:var(--txt); }
+  .ordem-menu small { grid-column:1; font-size:12px; color:var(--sub); }
+  .ordem-menu .check { grid-column:2; grid-row:1 / span 2; color:var(--pres); visibility:hidden; }
+  .ordem-menu [aria-selected=true] b { color:var(--pres); font-weight:600; }
+  .ordem-menu [aria-selected=true] .check { visibility:visible; }
   .cab { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
           background:transparent; color:var(--sub); cursor:grab; touch-action:none; }
@@ -628,7 +647,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const grade = document.querySelector('.grade');
     if (!grade) return;
     const o = lerOrdem(), modo = (CRITERIOS[o.modo] || o.modo === 'custom') ? o.modo : 'risco';
-    document.getElementById('ordem').value = modo;
+    marcarOrdem(modo);
     document.querySelector('main').classList.toggle('personalizada', modo === 'custom');
     const pos = new Map((o.lista || []).map((n, i) => [n, i])); // matéria nova vai pro fim
     const cmp = CRITERIOS[modo] || ((a, b) => (pos.get(a.dataset.nome) ?? 1e9) - (pos.get(b.dataset.nome) ?? 1e9) || a.dataset.i - b.dataset.i);
@@ -637,11 +656,46 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   }
   const salvarPersonalizada = () => salvarOrdem({ modo: 'custom', lista: cartoes().map((c) => c.dataset.nome) });
   document.addEventListener('DOMContentLoaded', () => aplicarOrdem(false));
-  document.addEventListener('change', (e) => {
-    if (e.target.id !== 'ordem') return;
+  // Menu de ordem próprio: botão + lista (mouse, toque e teclado)
+  const botaoOrdem = () => document.getElementById('ordem');
+  const menuOrdem = () => document.querySelector('.ordem-menu');
+  function marcarOrdem(modo) {
+    const op = menuOrdem().querySelector('[data-valor="' + modo + '"]');
+    menuOrdem().querySelectorAll('[role=option]').forEach((li) => li.setAttribute('aria-selected', li === op));
+    botaoOrdem().querySelector('.ordem-valor').textContent = op.querySelector('b').textContent;
+  }
+  function abrirMenu(abrir) {
+    const m = menuOrdem();
+    if (m.hidden === !abrir) return;
+    m.hidden = !abrir;
+    botaoOrdem().setAttribute('aria-expanded', abrir);
+    if (abrir) m.querySelector('[aria-selected=true]').focus();
+  }
+  function escolherOrdem(modo) {
+    abrirMenu(false);
+    botaoOrdem().focus();
     const o = lerOrdem();
-    salvarOrdem({ modo: e.target.value, lista: o.lista?.length ? o.lista : cartoes().map((c) => c.dataset.nome) });
+    salvarOrdem({ modo, lista: o.lista?.length ? o.lista : cartoes().map((c) => c.dataset.nome) });
     aplicarOrdem(true);
+  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#ordem')) return abrirMenu(menuOrdem().hidden);
+    const li = e.target.closest('.ordem-menu [role=option]');
+    if (li) return escolherOrdem(li.dataset.valor);
+    if (!e.target.closest('.ordem-menu')) abrirMenu(false); // clique fora fecha
+  });
+  document.addEventListener('keydown', (e) => {
+    const m = menuOrdem();
+    if (!m) return;
+    if (m.hidden) {
+      if (e.target.id === 'ordem' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); abrirMenu(true); }
+      return;
+    }
+    const ops = [...m.querySelectorAll('[role=option]')], i = ops.indexOf(document.activeElement);
+    if (e.key === 'Escape') { abrirMenu(false); botaoOrdem().focus(); }
+    else if (e.key === 'Tab') abrirMenu(false);
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); ops[(i + (e.key === 'ArrowDown' ? 1 : -1) + ops.length) % ops.length].focus(); }
+    else if ((e.key === 'Enter' || e.key === ' ') && i >= 0) { e.preventDefault(); escolherOrdem(ops[i].dataset.valor); }
   });
   // Personalizada: arrasta pela alça (mouse ou dedo) ou move com as setas do teclado
   let arrastando = null;
@@ -714,17 +768,13 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     <div class="titulo">
       <h1>Frequência</h1>
       <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)}</p>
-      <label class="ordem" title="Ordenar por">
-        <svg class="ic" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5 13V3M2.5 5.5 5 3l2.5 2.5M11 3v10m-2.5-2.5L11 13l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <select id="ordem" aria-label="Ordenar por">
-          <option value="risco">Risco</option>
-          <option value="pode">Menos faltas sobrando</option>
-          <option value="prox">Próxima aula</option>
-          <option value="nome">Nome</option>
-          <option value="custom">Personalizada</option>
-        </select>
-        <svg class="ch" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M4.5 6 8 2.5 11.5 6M4.5 10 8 13.5 11.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </label>
+      <div class="ordem">
+        <span id="ordem-rotulo">Ordenar por:</span>
+        <button type="button" id="ordem" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="ordem-rotulo ordem"><span class="ordem-valor">${OPCOES_ORDEM[0][1]}</span>${SETA_BAIXO}</button>
+        <ul class="ordem-menu" role="listbox" aria-labelledby="ordem-rotulo" hidden>
+          ${OPCOES_ORDEM.map(([v, t, d]) => `<li role="option" tabindex="-1" data-valor="${v}" aria-selected="${v === 'risco'}"><b>${t}</b><small>${d}</small>${CHECK}</li>`).join('')}
+        </ul>
+      </div>
     </div>
     ${botao}
   </div>
