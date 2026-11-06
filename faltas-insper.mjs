@@ -758,6 +758,29 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     box-shadow:inset 0 1px 0 var(--brilho), inset 0 -1px 0 rgb(255 255 255 / .25), inset 1px 0 0 rgb(255 255 255 / .18),
                inset -1px 0 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05), 0 16px 40px -14px var(--sombra); }
   @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao, .premium.lente .card { backdrop-filter:none; } }
+  /* Calendário premium: ocupa o cartão, dias em círculo como no app Calendário, setas no cabeçalho do mês, legenda discreta */
+  .premium .cal { position:relative; margin-top:14px; padding-top:16px; font-size:13px; }
+  .premium .mes { max-width:none; }
+  .premium .mes-nome { font-size:17px; font-weight:650; letter-spacing:-.02em; margin:0 0 12px 2px; line-height:30px; }
+  .premium .nav-mes { position:absolute; top:16px; right:0; margin:0; gap:2px; }
+  .premium .nav-mes button { width:30px; height:30px; border:0; border-radius:50%; background:transparent; color:var(--pres); transition:background-color .15s, transform .4s var(--mola); }
+  .premium .nav-mes button:hover:not(:disabled) { background:var(--trilho); }
+  .premium .nav-mes button:active:not(:disabled) { transform:scale(.9); }
+  .premium .dias { gap:6px 2px; }
+  .premium .dias b { font-size:11px; font-weight:600; letter-spacing:.02em; padding-bottom:2px; }
+  .premium .dias span, .premium .dias button { justify-self:center; display:grid; place-items:center; width:100%; max-width:38px; aspect-ratio:1;
+                                               padding:0; border-radius:50%; font-size:15px; color:var(--txt); }
+  .premium .dias span:empty { visibility:hidden; }
+  .premium .dias .aula, .premium .dias .hoje.aula { background:color-mix(in srgb, var(--pres) 15%, transparent); color:var(--pres); font-weight:600; }
+  .premium .dias .foi { background:var(--trilho); color:var(--txt); }
+  .premium .dias .falta, .premium .dias .hoje.falta { background:var(--ruim); color:#fff; font-weight:600; }
+  .premium .dias .feriado { color:var(--sub); }
+  .premium .dias .hoje { box-shadow:inset 0 0 0 2px var(--medio); font-weight:700; }
+  .premium .legenda { justify-content:center; gap:4px 14px; margin-top:16px; font-size:11.5px; }
+  .premium .legenda span::before { width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:0; }
+  .premium .legenda .aula::before { background:color-mix(in srgb, var(--pres) 45%, transparent); }
+  .premium .cal-feriados, .premium .cal-dica { text-align:center; font-size:11.5px; margin-top:6px; }
+  .premium .modo-toque { margin:14px auto 0; }
   /* Alternador Original / Premium */
   .versao { touch-action:none; position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
             display:flex; padding:3px; isolation:isolate; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
