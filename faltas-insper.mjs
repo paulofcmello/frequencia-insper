@@ -288,22 +288,19 @@ function calendario(m) {
   const faltas = new Set(m.datas.map((d) => d.split('/').reverse().join('-'))); // portal manda DD/MM/AAAA
   const feriados = Object.fromEntries((m.feriados || []).map((f) => [f.dia, f.nome]));
   const meses = [];
-  // Um mês a mais depois da última aula, pra dar pra marcar as provas
-  const depois = new Date(m.diasAula.at(-1).slice(0, 7) + '-01T12:00:00Z');
-  depois.setUTCMonth(depois.getUTCMonth() + 1);
-  for (let d = new Date(m.diasAula[0].slice(0, 7) + '-01T12:00:00Z'); d.toISOString().slice(0, 7) <= depois.toISOString().slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) {
+  for (let d = new Date(m.diasAula[0].slice(0, 7) + '-01T12:00:00Z'); d.toISOString().slice(0, 7) <= m.diasAula.at(-1).slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) {
     const ano = d.getUTCFullYear(), mes = d.getUTCMonth();
     const nDias = new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate();
     let dias = '<i></i>'.repeat(d.getUTCDay());
     for (let i = 1; i <= nDias; i++) {
       const iso = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
       const tipo = faltas.has(iso) ? 'falta' : feriados[iso] ? 'feriado' : aulas[iso] ? (iso < hoje ? 'foi' : 'aula') : '';
-      const dica = faltas.has(iso) ? 'Falta' : feriados[iso] ? 'Feriado: ' + feriados[iso] : aulas[iso] ? 'Aula ' + aulas[iso].join(', ') + (tipo === 'aula' ? ' · toque pra simular falta' : '') : '';
+      const dica = faltas.has(iso) ? 'Falta' : feriados[iso] ? 'Feriado: ' + feriados[iso] : aulas[iso] ? 'Aula ' + aulas[iso].join(', ') + '' : '';
       const classe = `class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''}`;
-      // Aula futura é botão: toque marca/desmarca uma falta simulada
+      // Aula futura é botão: com o simulador ligado, o toque marca "vou faltar" ou "vou com certeza"
       dias += tipo === 'aula'
         ? `<button type="button" ${classe} data-dia="${iso}" data-n="${aulas[iso].length}" aria-pressed="false">${i}</button>`
-        : `<span ${classe}${iso >= hoje ? ` data-dia="${iso}"` : ''}>${i}</span>`; // dia futuro: dá pra marcar "não posso faltar"
+        : `<span ${classe}>${i}</span>`;
     }
     const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
     meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
@@ -317,14 +314,16 @@ function calendario(m) {
   meses[atual] = meses[atual].replace(' hidden>', '>');
   return `${meses.join('')}
     <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>${SETA_ESQ}</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>${SETA_DIR}</button></div>
-    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano">falta simulada</span><span class="marcado">não posso faltar</span></div>
-    <div class="modo-toque" role="group" aria-label="O que o toque marca"><button type="button" data-modo="falta" aria-pressed="true">Simular falta</button><button type="button" data-modo="marcar" aria-pressed="false">Não posso faltar</button></div>
-    <div class="cal-dica">${DICA_FALTA}</div>
+    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano so-sim">vou faltar</span><span class="vou so-sim">vou com certeza</span></div>
+    <div class="so-sim">
+      <div class="modo-toque" role="group" aria-label="O que o toque marca"><button type="button" data-modo="falta" aria-pressed="true">Vou faltar</button><button type="button" data-modo="vou" aria-pressed="false">Vou com certeza</button></div>
+      <div class="cal-dica">${DICA_FALTA}</div>
+    </div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
 
 const DICA_FALTA = 'Toque numa aula futura pra simular uma falta.';
-const DICA_MARCAR = 'Toque num dia pra marcar prova ou aula que você não pode faltar. Toque de novo pra desmarcar.';
+const DICA_VOU = 'Toque numa aula que você vai com certeza (ex.: prova): ela sai da conta das que dá pra faltar.';
 
 // Portal manda nomes em caixa alta; deixa legível sem estragar algarismos romanos
 const MINUSCULAS = new Set(['a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'para', 'com']);
@@ -382,12 +381,11 @@ function cartao(m, i) {
     <div class="hero">
       <div class="hero-topo">
         <b class="hero-titulo">${heroTitulo}</b>
-        ${faltamPresencas === 0 ? `<span class="garantida" title="Já tem presenças suficientes: mesmo faltando todas as aulas restantes, passa por frequência">${CHECK}Presença garantida</span>` : ''}
+        <span class="garantida" title="Já tem presenças suficientes: mesmo faltando todas as aulas restantes, passa por frequência"${faltamPresencas === 0 ? '' : ' hidden'}>${CHECK}Presença garantida</span>
       </div>
       <div class="hero-linha">${heroNum !== '' ? `<span class="big">${heroNum}</span>` : ''}<span class="hero-sub">${heroSub}</span></div>
     </div>
     ${blocos ? `<div class="blocos" role="img" aria-label="${podeFaltar} de ${m.aulasRestantes} aulas restantes ainda podem ser faltadas">${blocos}</div>` : ''}
-    <div class="nao-faltar" hidden>Não pode faltar <b></b> <small></small></div>
     <div class="sim" hidden>Simulando <b></b> <button type="button" class="limpar-sim">limpar</button></div>
     <div class="stats">
       <div>
@@ -548,6 +546,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .garantida { display:inline-flex; align-items:center; gap:4px; flex:none; padding:2px 9px 2px 7px; border-radius:980px; white-space:nowrap;
                font-size:12px; font-weight:600; color:var(--bom); background:color-mix(in srgb, var(--bom) 14%, transparent); }
   .garantida .check { visibility:visible; }
+  .garantida[hidden] { display:none; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
           background:transparent; color:var(--sub); cursor:grab; touch-action:none; }
   main.personalizada .alca { display:grid; }
@@ -642,25 +641,22 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .sim { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--ruim); }
   .sim[hidden] { display:none; }
   .limpar-sim { font:inherit; padding:0; border:0; background:none; color:var(--pres); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
-  #so-hoje { font:inherit; font-size:13px; font-weight:600; color:var(--txt); background:var(--trilho); border:0; border-radius:980px;
+  #so-hoje, #simulador { font:inherit; font-size:13px; font-weight:600; color:var(--txt); background:var(--trilho); border:0; border-radius:980px;
              padding:4px 12px; cursor:pointer; align-self:center; transition:background-color .15s, color .15s; }
-  #so-hoje:hover { background:color-mix(in srgb, var(--trilho) 86%, var(--txt)); }
-  #so-hoje[aria-pressed=true] { background:var(--pres); color:var(--on); }
-  #so-hoje:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  #so-hoje:hover, #simulador:hover { background:color-mix(in srgb, var(--trilho) 86%, var(--txt)); }
+  #so-hoje[aria-pressed=true], #simulador[aria-pressed=true] { background:var(--pres); color:var(--on); }
+  #so-hoje:focus-visible, #simulador:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
   .vazio-hoje { color:var(--sub); margin:8px 0 0; }
-  /* Dias que a pessoa marcou como "não posso faltar" (prova, apresentação…) */
-  .dias .marcado, .dias .marcado.hoje { background:var(--marca); color:#1d1d1f; font-weight:700; }
-  .legenda .marcado::before { background:var(--marca); }
-  .cal.marcando .dias [data-dia] { cursor:pointer; }
-  .cal.marcando .dias span[data-dia]:hover { background:color-mix(in srgb, var(--marca) 35%, transparent); }
+  /* Simulador desligado: calendário só mostra, toque não marca nada */
+  main:not(.simulando) .so-sim { display:none; }
+  main:not(.simulando) .dias button { pointer-events:none; }
+  .dias .vou, .dias .vou.hoje { background:var(--marca); color:#1d1d1f; font-weight:700; }
+  .legenda .vou::before { background:var(--marca); }
+  .blocos i.vou { background:color-mix(in srgb, var(--marca) 70%, transparent); }
   .modo-toque { display:flex; gap:4px; margin-top:10px; padding:2px; border-radius:9px; background:var(--trilho); width:max-content; }
   .modo-toque button { font:inherit; font-size:12px; font-weight:500; padding:4px 10px; border:0; border-radius:7px; background:transparent; color:var(--sub); cursor:pointer; }
   .modo-toque [aria-pressed=true] { background:var(--card); color:var(--txt); font-weight:600; box-shadow:0 1px 3px rgb(0 0 0 / .15); }
   .modo-toque button:focus-visible { outline:2px solid var(--pres); outline-offset:1px; }
-  .nao-faltar { display:inline-flex; align-items:center; gap:4px; margin-top:8px; padding:2px 10px; border-radius:980px; font-size:12px; font-weight:600;
-                background:color-mix(in srgb, var(--marca) 30%, transparent); color:var(--txt); }
-  .nao-faltar[hidden] { display:none; }
-  .nao-faltar small { font-weight:500; color:var(--sub); }
 </style>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
@@ -690,7 +686,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     document.body.dataset.atualizado = novo.body.dataset.atualizado;
     aplicarOrdem(false);
     aplicarSim();
-    aplicarMarcas();
     filtrarHoje();
     document.querySelectorAll('.card.mudou').forEach(contar);
   }
@@ -741,34 +736,49 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     animar ? mover(reordenar) : reordenar();
   }
   const salvarPersonalizada = () => salvarOrdem({ modo: 'custom', lista: cartoes().map((c) => c.dataset.nome) });
-  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); aplicarSim(); aplicarMarcas(); });
+  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); ligarSimulador(simLigado()); });
 
-  // Simulador: faltas planejadas em aulas futuras, guardadas só neste navegador
-  const CHAVE_SIM = 'frequencia-simulacao';
+  // Simulador (liga/desliga no topo): em cada aula futura marca "vou faltar" ou "vou com certeza" (ex.: prova).
+  // Aula certa sai da conta das que dá pra faltar. Tudo guardado só neste navegador.
+  const CHAVE_SIM = 'frequencia-simulacao', CHAVE_VOU = 'frequencia-vou', CHAVE_SIM_ON = 'frequencia-simulador';
   const hojeSP = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
-  const lerSim = () => { try { return JSON.parse(localStorage.getItem(CHAVE_SIM)) || {}; } catch { return {}; } };
+  const ler = (k) => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; } };
+  const gravar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const simLigado = () => { try { return localStorage.getItem(CHAVE_SIM_ON) === '1'; } catch { return false; } };
   const salvarSim = () => {
-    const sim = {};
+    const faltas = {}, vou = {};
     for (const c of cartoes()) {
-      const dias = [...c.querySelectorAll('.cal button.plano')].map((b) => b.dataset.dia);
-      if (dias.length) sim[c.dataset.nome] = dias;
+      const f = [...c.querySelectorAll('.cal button.plano')].map((b) => b.dataset.dia);
+      const v = [...c.querySelectorAll('.cal button.vou')].map((b) => b.dataset.dia);
+      if (f.length) faltas[c.dataset.nome] = f;
+      if (v.length) vou[c.dataset.nome] = v;
     }
-    try { localStorage.setItem(CHAVE_SIM, JSON.stringify(sim)); } catch {}
+    gravar(CHAVE_SIM, faltas);
+    gravar(CHAVE_VOU, vou);
   };
+  function ligarSimulador(on) {
+    try { localStorage.setItem(CHAVE_SIM_ON, on ? '1' : '0'); } catch {}
+    document.querySelector('main').classList.toggle('simulando', on);
+    document.getElementById('simulador')?.setAttribute('aria-pressed', on);
+    aplicarSim();
+  }
+  // Desligado: cartões com os números reais; as marcações ficam guardadas pra quando ligar de novo
   function aplicarSim() {
-    const sim = lerSim(), hoje = hojeSP();
+    const on = simLigado(), faltas = on ? ler(CHAVE_SIM) : {}, vou = on ? ler(CHAVE_VOU) : {}, hoje = hojeSP();
     for (const c of cartoes()) {
-      const dias = new Set((sim[c.dataset.nome] || []).filter((d) => d >= hoje)); // dia que passou não conta mais
-      c.querySelectorAll('.cal button[data-dia]').forEach((b) => marcarPlano(b, dias.has(b.dataset.dia)));
+      const f = new Set((faltas[c.dataset.nome] || []).filter((d) => d >= hoje)); // dia que passou não conta mais
+      const v = new Set((vou[c.dataset.nome] || []).filter((d) => d >= hoje));
+      c.querySelectorAll('.cal button[data-dia]').forEach((b) => marcar(b, f.has(b.dataset.dia) ? 'plano' : v.has(b.dataset.dia) ? 'vou' : ''));
       simular(c);
     }
   }
-  function marcarPlano(b, sim) { b.classList.toggle('plano', sim); b.setAttribute('aria-pressed', sim); }
-  // Mesma conta do servidor (cartao/folga), com as faltas simuladas somadas
+  function marcar(b, tipo) { b.classList.toggle('plano', tipo === 'plano'); b.classList.toggle('vou', tipo === 'vou'); b.setAttribute('aria-pressed', !!tipo); }
+  // Mesma conta do servidor (cartao/folga), com as faltas simuladas somadas e as aulas certas fora das restantes
   function simular(c) {
     const hoje = hojeSP();
-    const k = [...c.querySelectorAll('.cal button.plano')].filter((b) => b.dataset.dia >= hoje).reduce((t, b) => t + +b.dataset.n, 0);
-    const R = c.dataset.restantes - k, A = +c.dataset.aulasRestantes, F = +c.dataset.faltas + k, P = +c.dataset.permitidas;
+    const soma = (cls) => [...c.querySelectorAll('.cal button.' + cls)].filter((b) => b.dataset.dia >= hoje).reduce((t, b) => t + +b.dataset.n, 0);
+    const k = soma('plano'), v = soma('vou'), R0 = +c.dataset.restantes, A0 = +c.dataset.aulasRestantes;
+    const R = R0 - k, A = Math.max(0, A0 - v), F = +c.dataset.faltas + k, P = +c.dataset.permitidas;
     const pode = Math.max(0, Math.min(R, A)), pct = A > 0 ? Math.round((pode / A) * 100) : 0;
     const f = R < 0 ? -1 : A <= 0 ? 1 : Math.min(R, A) / A;
     const nivel = R <= 0 || f < 0.25 ? 'ruim' : f < 0.5 ? 'medio' : 'bom';
@@ -777,80 +787,54 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     c.dataset.podeAgora = pode;
     c.dataset.nivelAgora = nivel;
     const big = c.querySelector('.big');
-    if (big && A > 0) {
+    if (big && A0 > 0) {
+      const certas = v ? ' · fora ' + (v === 1 ? '1 certa' : v + ' certas') : '';
       const [tit, num, sub] = R < 0
         ? ['Passou do limite', '+' + -R, -R === 1 ? 'falta a mais' : 'faltas a mais']
-        : [R === 0 ? 'Não pode mais faltar' : 'Pode faltar', pode, 'de ' + A + (A === 1 ? ' aula restante' : ' aulas restantes') + (R > 0 ? ' · ' + pct + '%' : '')];
+        : A === 0
+          ? ['Vai em todas', 0, 'você marcou todas as aulas restantes']
+          : [R === 0 ? 'Não pode mais faltar' : 'Pode faltar', pode, 'de ' + A + (A === 1 ? ' aula restante' : ' aulas restantes') + (R > 0 ? ' · ' + pct + '%' : '') + certas];
       c.querySelector('.hero-titulo').textContent = tit;
       big.textContent = num;
       c.querySelector('.hero-sub').textContent = sub;
     }
+    // Presença garantida: as presenças que faltam cabem nas aulas certas
+    const faltamPres = Math.max(0, A - R0);
+    c.querySelector('.garantida').hidden = faltamPres > 0;
+    c.querySelector('.stats > div:first-child .nota').textContent = faltamPres === 0 ? 'presença garantida' : 'faltam ' + faltamPres + ' de ' + A;
     const planejados = Math.min(k, A - pode);
-    c.querySelectorAll('.blocos i').forEach((b, j) => { b.classList.toggle('livre', j < pode); b.classList.toggle('plano', j >= pode && j < pode + planejados); });
-    const v = c.querySelector('.stats > div:nth-child(2) .v');
-    v.firstChild.textContent = F;
+    c.querySelectorAll('.blocos i').forEach((b, j) => {
+      b.classList.toggle('livre', j < pode);
+      b.classList.toggle('plano', j >= pode && j < pode + planejados);
+      b.classList.toggle('vou', j >= A0 - v);
+    });
+    const vf = c.querySelector('.stats > div:nth-child(2) .v');
+    vf.firstChild.textContent = F;
     c.querySelector('.barra.falt').style.width = (P > 0 ? Math.min(100, (F / P) * 100) : 0).toFixed(1) + '%';
+    const partes = [k && (k === 1 ? '1 falta' : k + ' faltas'), v && (v === 1 ? '1 aula certa' : v + ' aulas certas')].filter(Boolean);
     const aviso = c.querySelector('.sim');
-    aviso.hidden = k === 0;
-    aviso.querySelector('b').textContent = k === 1 ? '1 falta' : k + ' faltas';
+    aviso.hidden = !partes.length;
+    aviso.querySelector('b').textContent = partes.join(' e ');
   }
-  // "Não posso faltar": dias marcados à mão (prova, apresentação…), guardados só neste navegador
-  const CHAVE_MARCAS = 'frequencia-nao-faltar';
-  const lerMarcas = () => { try { return JSON.parse(localStorage.getItem(CHAVE_MARCAS)) || {}; } catch { return {}; } };
-  const salvarMarcas = () => {
-    const o = {};
-    for (const c of cartoes()) {
-      const dias = [...c.querySelectorAll('.cal .marcado[data-dia]')].map((x) => x.dataset.dia);
-      if (dias.length) o[c.dataset.nome] = dias;
-    }
-    try { localStorage.setItem(CHAVE_MARCAS, JSON.stringify(o)); } catch {}
-  };
-  function aplicarMarcas() {
-    const o = lerMarcas(), hoje = hojeSP();
-    for (const c of cartoes()) {
-      const dias = new Set((o[c.dataset.nome] || []).filter((d) => d >= hoje)); // dia que passou some
-      c.querySelectorAll('.cal [data-dia]').forEach((x) => x.classList.toggle('marcado', dias.has(x.dataset.dia)));
-      avisar(c);
-    }
-  }
-  // Mostra no cartão o próximo dia marcado: "Não pode faltar hoje / amanhã / qui 26/11"
-  function avisar(c) {
-    const hoje = hojeSP(), el = c.querySelector('.nao-faltar');
-    const dias = [...c.querySelectorAll('.cal .marcado[data-dia]')].map((x) => x.dataset.dia).filter((d) => d >= hoje).sort();
-    el.hidden = !dias.length;
-    if (!dias.length) return;
-    const amanha = new Date(Date.parse(hoje + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10), d = dias[0];
-    el.querySelector('b').textContent = d === hoje ? 'hoje' : d === amanha ? 'amanhã'
-      : new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '').replace(',', '');
-    el.querySelector('small').textContent = dias.length > 1 ? '· +' + (dias.length - 1) + ' marcado' + (dias.length > 2 ? 's' : '') : '';
-  }
-  // Fica antes do simulador: no modo "não posso faltar" o toque marca o dia em vez de simular falta
   document.addEventListener('click', (e) => {
+    if (e.target.closest('#simulador')) return ligarSimulador(!simLigado());
     const modo = e.target.closest('.modo-toque button');
     if (modo) {
-      const cal = modo.closest('.cal'), marcar = modo.dataset.modo === 'marcar';
-      cal.classList.toggle('marcando', marcar);
+      const cal = modo.closest('.cal');
+      cal.dataset.modo = modo.dataset.modo;
       cal.querySelectorAll('.modo-toque button').forEach((x) => x.setAttribute('aria-pressed', x === modo));
-      cal.querySelector('.cal-dica').textContent = marcar ? ${JSON.stringify(DICA_MARCAR)} : ${JSON.stringify(DICA_FALTA)};
+      cal.querySelector('.cal-dica').textContent = modo.dataset.modo === 'vou' ? ${JSON.stringify(DICA_VOU)} : ${JSON.stringify(DICA_FALTA)};
       return;
     }
-    const d = e.target.closest('.cal.marcando [data-dia]');
-    if (!d) return;
-    e.stopImmediatePropagation();
-    const c = d.closest('.card');
-    d.classList.toggle('marcado');
-    if (d.classList.contains('plano')) { marcarPlano(d, false); simular(c); salvarSim(); } // marcado não é falta simulada
-    avisar(c);
-    salvarMarcas();
-  });
-  document.addEventListener('click', (e) => {
-    const b = e.target.closest('.cal button[data-dia]');
+    const b = e.target.closest('main.simulando .cal button[data-dia]');
     const limpar = e.target.closest('.limpar-sim');
     if (!b && !limpar) return;
     e.preventDefault(); // "limpar" fica dentro do <summary>: não abre/fecha o calendário
     const c = (b || limpar).closest('.card');
-    if (b) marcarPlano(b, !b.classList.contains('plano'));
-    else c.querySelectorAll('.cal button.plano').forEach((x) => marcarPlano(x, false));
+    if (b) {
+      const tipo = b.closest('.cal').dataset.modo === 'vou' ? 'vou' : 'plano';
+      marcar(b, b.classList.contains(tipo) ? '' : tipo); // tocar de novo desmarca; trocar de modo troca a marca
+    } else c.querySelectorAll('.cal button[data-dia]').forEach((x) => marcar(x, ''));
     simular(c);
     salvarSim();
   });
@@ -1006,6 +990,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
         </ul>
       </div>
       <button type="button" id="so-hoje" aria-pressed="false" title="Mostrar só as matérias com aula hoje">Hoje</button>
+      <button type="button" id="simulador" aria-pressed="false" title="Simular faltas e aulas que você vai com certeza">Simulador</button>
     </div>
     ${botao}
   </div>
