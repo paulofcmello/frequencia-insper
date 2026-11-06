@@ -495,8 +495,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   h1 { font-size:28px; line-height:1.1; letter-spacing:-.025em; margin:0; }
   .sub { color:var(--sub); margin:0; font-size:14px; text-wrap:pretty; }
   .titulo { display:flex; align-items:baseline; gap:2px 14px; flex-wrap:wrap; }
-  .ordem { display:inline-flex; align-items:center; gap:6px; color:var(--sub); font-size:14px; }
-  .ordem select { font:inherit; color:var(--txt); background:var(--card); border:1px solid var(--borda); border-radius:8px; padding:3px 6px; cursor:pointer; }
+  /* Botão de menu no estilo do macOS: pílula cinza, ícone, valor atual e chevron duplo; o menu aberto é o nativo */
+  .ordem { position:relative; display:inline-flex; align-items:center; align-self:center; color:var(--sub); }
+  .ordem svg { position:absolute; pointer-events:none; }
+  .ordem .ic { left:10px; } .ordem .ch { right:10px; }
+  .ordem select { appearance:none; -webkit-appearance:none; font:inherit; font-size:13px; font-weight:500; color:var(--txt);
+                  background:var(--trilho); border:0; border-radius:980px; padding:5px 28px 5px 29px; cursor:pointer; field-sizing:content;
+                  transition:background-color .15s; }
+  .ordem select:hover { background:color-mix(in srgb, var(--trilho) 88%, var(--txt)); }
+  .ordem select:active { background:color-mix(in srgb, var(--trilho) 80%, var(--txt)); }
   .ordem select:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
   .cab { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
@@ -707,14 +714,16 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     <div class="titulo">
       <h1>Frequência</h1>
       <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)}</p>
-      <label class="ordem">Ordenar por
-        <select id="ordem">
-          <option value="risco">risco (% que dá pra faltar)</option>
-          <option value="pode">menos faltas sobrando</option>
-          <option value="prox">próxima aula</option>
-          <option value="nome">nome</option>
-          <option value="custom">personalizada (arrastar)</option>
+      <label class="ordem" title="Ordenar por">
+        <svg class="ic" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5 13V3M2.5 5.5 5 3l2.5 2.5M11 3v10m-2.5-2.5L11 13l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <select id="ordem" aria-label="Ordenar por">
+          <option value="risco">Risco</option>
+          <option value="pode">Menos faltas sobrando</option>
+          <option value="prox">Próxima aula</option>
+          <option value="nome">Nome</option>
+          <option value="custom">Personalizada</option>
         </select>
+        <svg class="ch" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M4.5 6 8 2.5 11.5 6M4.5 10 8 13.5 11.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </label>
     </div>
     ${botao}
