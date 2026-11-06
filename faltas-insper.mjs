@@ -288,7 +288,10 @@ function calendario(m) {
   const faltas = new Set(m.datas.map((d) => d.split('/').reverse().join('-'))); // portal manda DD/MM/AAAA
   const feriados = Object.fromEntries((m.feriados || []).map((f) => [f.dia, f.nome]));
   const meses = [];
-  for (let d = new Date(m.diasAula[0].slice(0, 7) + '-01T12:00:00Z'); d.toISOString().slice(0, 7) <= m.diasAula.at(-1).slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) {
+  // Um mês a mais depois da última aula, pra dar pra marcar as provas
+  const depois = new Date(m.diasAula.at(-1).slice(0, 7) + '-01T12:00:00Z');
+  depois.setUTCMonth(depois.getUTCMonth() + 1);
+  for (let d = new Date(m.diasAula[0].slice(0, 7) + '-01T12:00:00Z'); d.toISOString().slice(0, 7) <= depois.toISOString().slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) {
     const ano = d.getUTCFullYear(), mes = d.getUTCMonth();
     const nDias = new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate();
     let dias = '<i></i>'.repeat(d.getUTCDay());
@@ -300,7 +303,7 @@ function calendario(m) {
       // Aula futura é botão: toque marca/desmarca uma falta simulada
       dias += tipo === 'aula'
         ? `<button type="button" ${classe} data-dia="${iso}" data-n="${aulas[iso].length}" aria-pressed="false">${i}</button>`
-        : `<span ${classe}>${i}</span>`;
+        : `<span ${classe}${iso >= hoje ? ` data-dia="${iso}"` : ''}>${i}</span>`; // dia futuro: dá pra marcar "não posso faltar"
     }
     const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
     meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
@@ -314,10 +317,14 @@ function calendario(m) {
   meses[atual] = meses[atual].replace(' hidden>', '>');
   return `${meses.join('')}
     <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>${SETA_ESQ}</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>${SETA_DIR}</button></div>
-    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano">falta simulada</span></div>
-    <div class="cal-dica">Toque numa aula futura pra simular uma falta.</div>
+    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano">falta simulada</span><span class="marcado">não posso faltar</span></div>
+    <div class="modo-toque" role="group" aria-label="O que o toque marca"><button type="button" data-modo="falta" aria-pressed="true">Simular falta</button><button type="button" data-modo="marcar" aria-pressed="false">Não posso faltar</button></div>
+    <div class="cal-dica">${DICA_FALTA}</div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
+
+const DICA_FALTA = 'Toque numa aula futura pra simular uma falta.';
+const DICA_MARCAR = 'Toque num dia pra marcar prova ou aula que você não pode faltar. Toque de novo pra desmarcar.';
 
 // Portal manda nomes em caixa alta; deixa legível sem estragar algarismos romanos
 const MINUSCULAS = new Set(['a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'para', 'com']);
@@ -380,6 +387,7 @@ function cartao(m, i) {
       <div class="hero-linha">${heroNum !== '' ? `<span class="big">${heroNum}</span>` : ''}<span class="hero-sub">${heroSub}</span></div>
     </div>
     ${blocos ? `<div class="blocos" role="img" aria-label="${podeFaltar} de ${m.aulasRestantes} aulas restantes ainda podem ser faltadas">${blocos}</div>` : ''}
+    <div class="nao-faltar" hidden>Não pode faltar <b></b> <small></small></div>
     <div class="sim" hidden>Simulando <b></b> <button type="button" class="limpar-sim">limpar</button></div>
     <div class="stats">
       <div>
@@ -503,10 +511,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
 <title>Frequência Insper</title>
 <style>
   :root { --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --trilho:#e5e5ea;
-          --bom:#248a3d; --medio:#c93400; --ruim:#d70015; --pres:#0a63c9; --borda:#e5e5ea; --on:#fff; }
+          --bom:#248a3d; --medio:#c93400; --ruim:#d70015; --pres:#0a63c9; --borda:#e5e5ea; --on:#fff; --marca:#ffcc00; }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --trilho:#3a3a3c;
-            --bom:#30d158; --medio:#ff9f0a; --ruim:#ff453a; --pres:#409cff; --borda:#2c2c2e; --on:#000; }
+            --bom:#30d158; --medio:#ff9f0a; --ruim:#ff453a; --pres:#409cff; --borda:#2c2c2e; --on:#000; --marca:#ffd60a; }
   }
   * { box-sizing:border-box; }
   ::selection { background:color-mix(in srgb, var(--pres) 28%, transparent); }
@@ -640,6 +648,19 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   #so-hoje[aria-pressed=true] { background:var(--pres); color:var(--on); }
   #so-hoje:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
   .vazio-hoje { color:var(--sub); margin:8px 0 0; }
+  /* Dias que a pessoa marcou como "não posso faltar" (prova, apresentação…) */
+  .dias .marcado, .dias .marcado.hoje { background:var(--marca); color:#1d1d1f; font-weight:700; }
+  .legenda .marcado::before { background:var(--marca); }
+  .cal.marcando .dias [data-dia] { cursor:pointer; }
+  .cal.marcando .dias span[data-dia]:hover { background:color-mix(in srgb, var(--marca) 35%, transparent); }
+  .modo-toque { display:flex; gap:4px; margin-top:10px; padding:2px; border-radius:9px; background:var(--trilho); width:max-content; }
+  .modo-toque button { font:inherit; font-size:12px; font-weight:500; padding:4px 10px; border:0; border-radius:7px; background:transparent; color:var(--sub); cursor:pointer; }
+  .modo-toque [aria-pressed=true] { background:var(--card); color:var(--txt); font-weight:600; box-shadow:0 1px 3px rgb(0 0 0 / .15); }
+  .modo-toque button:focus-visible { outline:2px solid var(--pres); outline-offset:1px; }
+  .nao-faltar { display:inline-flex; align-items:center; gap:4px; margin-top:8px; padding:2px 10px; border-radius:980px; font-size:12px; font-weight:600;
+                background:color-mix(in srgb, var(--marca) 30%, transparent); color:var(--txt); }
+  .nao-faltar[hidden] { display:none; }
+  .nao-faltar small { font-weight:500; color:var(--sub); }
 </style>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
@@ -669,6 +690,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     document.body.dataset.atualizado = novo.body.dataset.atualizado;
     aplicarOrdem(false);
     aplicarSim();
+    aplicarMarcas();
     filtrarHoje();
     document.querySelectorAll('.card.mudou').forEach(contar);
   }
@@ -719,7 +741,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     animar ? mover(reordenar) : reordenar();
   }
   const salvarPersonalizada = () => salvarOrdem({ modo: 'custom', lista: cartoes().map((c) => c.dataset.nome) });
-  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); aplicarSim(); });
+  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); aplicarSim(); aplicarMarcas(); });
 
   // Simulador: faltas planejadas em aulas futuras, guardadas só neste navegador
   const CHAVE_SIM = 'frequencia-simulacao';
@@ -772,6 +794,55 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     aviso.hidden = k === 0;
     aviso.querySelector('b').textContent = k === 1 ? '1 falta' : k + ' faltas';
   }
+  // "Não posso faltar": dias marcados à mão (prova, apresentação…), guardados só neste navegador
+  const CHAVE_MARCAS = 'frequencia-nao-faltar';
+  const lerMarcas = () => { try { return JSON.parse(localStorage.getItem(CHAVE_MARCAS)) || {}; } catch { return {}; } };
+  const salvarMarcas = () => {
+    const o = {};
+    for (const c of cartoes()) {
+      const dias = [...c.querySelectorAll('.cal .marcado[data-dia]')].map((x) => x.dataset.dia);
+      if (dias.length) o[c.dataset.nome] = dias;
+    }
+    try { localStorage.setItem(CHAVE_MARCAS, JSON.stringify(o)); } catch {}
+  };
+  function aplicarMarcas() {
+    const o = lerMarcas(), hoje = hojeSP();
+    for (const c of cartoes()) {
+      const dias = new Set((o[c.dataset.nome] || []).filter((d) => d >= hoje)); // dia que passou some
+      c.querySelectorAll('.cal [data-dia]').forEach((x) => x.classList.toggle('marcado', dias.has(x.dataset.dia)));
+      avisar(c);
+    }
+  }
+  // Mostra no cartão o próximo dia marcado: "Não pode faltar hoje / amanhã / qui 26/11"
+  function avisar(c) {
+    const hoje = hojeSP(), el = c.querySelector('.nao-faltar');
+    const dias = [...c.querySelectorAll('.cal .marcado[data-dia]')].map((x) => x.dataset.dia).filter((d) => d >= hoje).sort();
+    el.hidden = !dias.length;
+    if (!dias.length) return;
+    const amanha = new Date(Date.parse(hoje + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10), d = dias[0];
+    el.querySelector('b').textContent = d === hoje ? 'hoje' : d === amanha ? 'amanhã'
+      : new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '').replace(',', '');
+    el.querySelector('small').textContent = dias.length > 1 ? '· +' + (dias.length - 1) + ' marcado' + (dias.length > 2 ? 's' : '') : '';
+  }
+  // Fica antes do simulador: no modo "não posso faltar" o toque marca o dia em vez de simular falta
+  document.addEventListener('click', (e) => {
+    const modo = e.target.closest('.modo-toque button');
+    if (modo) {
+      const cal = modo.closest('.cal'), marcar = modo.dataset.modo === 'marcar';
+      cal.classList.toggle('marcando', marcar);
+      cal.querySelectorAll('.modo-toque button').forEach((x) => x.setAttribute('aria-pressed', x === modo));
+      cal.querySelector('.cal-dica').textContent = marcar ? ${JSON.stringify(DICA_MARCAR)} : ${JSON.stringify(DICA_FALTA)};
+      return;
+    }
+    const d = e.target.closest('.cal.marcando [data-dia]');
+    if (!d) return;
+    e.stopImmediatePropagation();
+    const c = d.closest('.card');
+    d.classList.toggle('marcado');
+    if (d.classList.contains('plano')) { marcarPlano(d, false); simular(c); salvarSim(); } // marcado não é falta simulada
+    avisar(c);
+    salvarMarcas();
+  });
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.cal button[data-dia]');
     const limpar = e.target.closest('.limpar-sim');
