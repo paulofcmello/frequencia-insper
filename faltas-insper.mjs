@@ -295,8 +295,12 @@ function calendario(m) {
     for (let i = 1; i <= nDias; i++) {
       const iso = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
       const tipo = faltas.has(iso) ? 'falta' : feriados[iso] ? 'feriado' : aulas[iso] ? (iso < hoje ? 'foi' : 'aula') : '';
-      const dica = faltas.has(iso) ? 'Falta' : feriados[iso] ? 'Feriado: ' + feriados[iso] : aulas[iso] ? 'Aula ' + aulas[iso].join(', ') : '';
-      dias += `<span class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''}>${i}</span>`;
+      const dica = faltas.has(iso) ? 'Falta' : feriados[iso] ? 'Feriado: ' + feriados[iso] : aulas[iso] ? 'Aula ' + aulas[iso].join(', ') + (tipo === 'aula' ? ' · toque pra simular falta' : '') : '';
+      const classe = `class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''}`;
+      // Aula futura é botão: toque marca/desmarca uma falta simulada
+      dias += tipo === 'aula'
+        ? `<button type="button" ${classe} data-dia="${iso}" data-n="${aulas[iso].length}" aria-pressed="false">${i}</button>`
+        : `<span ${classe}>${i}</span>`;
     }
     const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
     meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
@@ -310,7 +314,8 @@ function calendario(m) {
   meses[atual] = meses[atual].replace(' hidden>', '>');
   return `${meses.join('')}
     <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>${SETA_ESQ}</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>${SETA_DIR}</button></div>
-    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span></div>
+    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano">falta simulada</span></div>
+    <div class="cal-dica">Toque numa aula futura pra simular uma falta.</div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
 
@@ -359,7 +364,9 @@ function cartao(m, i) {
   const curta = (t, opc) => esc(dataBR(t, opc).replace('.', ''));
 
   return `
-  <details class="card ${nivel}" style="--c:${i}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}">
+  <details class="card ${nivel}" style="--c:${i}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}"
+    data-restantes="${m.restantes}" data-aulas-restantes="${m.aulasRestantes}" data-faltas="${m.faltas}" data-permitidas="${m.permitidas}"
+    data-chave="${m.faltas}|${m.presencas}|${m.restantes}|${m.aulasRestantes}|${m.proximaAula || ''}" data-aulas="${esc(JSON.stringify(m.diasAula || []))}">
     <summary>
     <div class="cab">
       <h2>${esc(nomeBonito(m.nome))}</h2>
@@ -370,6 +377,7 @@ function cartao(m, i) {
       <div class="hero-linha">${heroNum !== '' ? `<span class="big">${heroNum}</span>` : ''}<span class="hero-sub">${heroSub}</span></div>
     </div>
     ${blocos ? `<div class="blocos" role="img" aria-label="${podeFaltar} de ${m.aulasRestantes} aulas restantes ainda podem ser faltadas">${blocos}</div>` : ''}
+    <div class="sim" hidden>Simulando <b></b> <button type="button" class="limpar-sim">limpar</button></div>
     <div class="stats">
       <div>
         <div class="k">Presenças</div>
@@ -608,7 +616,36 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .legenda .falta::before { background:var(--ruim); }
   .legenda .hoje::before { box-shadow:inset 0 0 0 2px var(--medio); }
   .legenda .feriado::before { background:repeating-linear-gradient(45deg,var(--sub) 0 2px,transparent 2px 4px); }
-  .cal-feriados, .cal-vazio { color:var(--sub); margin-top:8px; }
+  .cal-feriados, .cal-vazio, .cal-dica { color:var(--sub); margin-top:8px; }
+  .dias button { font:inherit; color:inherit; border:0; padding:2px 0; border-radius:5px; cursor:pointer; transition:filter .15s, box-shadow .15s; }
+  .dias button:hover { filter:brightness(1.12); }
+  .dias button:focus-visible { outline:2px solid var(--txt); outline-offset:1px; }
+  .dias .plano, .dias .plano.hoje { background:color-mix(in srgb, var(--ruim) 14%, transparent); color:var(--ruim);
+                                    box-shadow:inset 0 0 0 1.5px var(--ruim); font-weight:700; }
+  .legenda .plano::before { box-shadow:inset 0 0 0 1.5px var(--ruim); }
+  .blocos i.plano { background:transparent; box-shadow:inset 0 0 0 1.5px var(--ruim); }
+  .sim { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--ruim); }
+  .sim[hidden] { display:none; }
+  .limpar-sim { font:inherit; padding:0; border:0; background:none; color:var(--pres); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+  /* Painel das próximas aulas */
+  .hoje { display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap; margin:0 0 14px; }
+  .hoje[hidden] { display:none; }
+  .hoje-cab { display:flex; flex-direction:column; line-height:1.25; }
+  .hoje-cab b { font-size:16px; letter-spacing:-.01em; }
+  .hoje-resumo { font-size:12.5px; font-weight:500; } .hoje-resumo.ok { color:var(--bom); } .hoje-resumo.nao { color:var(--ruim); }
+  .hoje-lista { display:flex; gap:8px; flex-wrap:wrap; }
+  .aula-hoje { --nivel:var(--bom); display:grid; grid-template-columns:auto auto; column-gap:12px; align-items:baseline; text-align:left;
+               font:inherit; color:var(--txt); background:var(--card); border:1px solid var(--borda); border-radius:12px; padding:7px 12px;
+               cursor:pointer; transition:border-color .15s, background-color .15s; }
+  .aula-hoje.medio { --nivel:var(--medio); } .aula-hoje.ruim { --nivel:var(--ruim); }
+  .aula-hoje:hover { border-color:var(--nivel); }
+  .aula-hoje:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  .aula-hoje .hora { grid-row:span 2; font-size:15px; font-weight:700; letter-spacing:-.01em; }
+  .aula-hoje .agora { display:block; font-size:10px; font-weight:600; color:var(--pres); text-transform:uppercase; letter-spacing:.04em; }
+  .aula-hoje .mat { font-size:13px; font-weight:500; }
+  .aula-hoje .ver { font-size:12px; font-weight:600; color:var(--nivel); }
+  .aula-hoje.plano { border-color:var(--ruim); background:color-mix(in srgb, var(--ruim) 8%, var(--card)); }
+  .aula-hoje.plano .ver { color:var(--ruim); }
 </style>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
@@ -626,10 +663,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const novo = new DOMParser().parseFromString(await r.text(), 'text/html');
     if (!r.ok || !novo.querySelector('.grade')) return location.reload(); // ex.: sessão expirou e veio a tela de login
     // Só anima o que mudou: cartão igual ao de antes entra parado; o que mudou pisca e conta o número
-    const antes = new Map(cartoes().map((c) => [c.dataset.nome, { txt: c.querySelector('summary').textContent, big: c.querySelector('.big')?.textContent }]));
+    const antes = new Map(cartoes().map((c) => [c.dataset.nome, { chave: c.dataset.chave, big: c.querySelector('.big')?.textContent }]));
     for (const c of novo.querySelectorAll('.grade > .card')) {
       const a = antes.get(c.dataset.nome);
-      if (a && a.txt === c.querySelector('summary').textContent) c.classList.add('sem-anim');
+      if (a && a.chave === c.dataset.chave) c.classList.add('sem-anim');
       else if (a) { c.classList.add('mudou'); c.dataset.bigAntes = a.big ?? ''; }
     }
     const main = document.querySelector('main');
@@ -637,6 +674,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     main.querySelector('.sub').replaceWith(novo.querySelector('.sub')); // horário de atualização fica no .topo
     document.body.dataset.atualizado = novo.body.dataset.atualizado;
     aplicarOrdem(false);
+    aplicarSim();
+    montarHoje();
     document.querySelectorAll('.card.mudou').forEach(contar);
   }
   // Número grande vai do valor antigo ao novo
@@ -686,7 +725,112 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     animar ? mover(reordenar) : reordenar();
   }
   const salvarPersonalizada = () => salvarOrdem({ modo: 'custom', lista: cartoes().map((c) => c.dataset.nome) });
-  document.addEventListener('DOMContentLoaded', () => aplicarOrdem(false));
+  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); aplicarSim(); montarHoje(); setInterval(montarHoje, 60 * 1000); });
+
+  // Simulador: faltas planejadas em aulas futuras, guardadas só neste navegador
+  const CHAVE_SIM = 'frequencia-simulacao';
+  const hojeSP = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const agoraSP = () => new Date().toLocaleTimeString('sv-SE', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+  const lerSim = () => { try { return JSON.parse(localStorage.getItem(CHAVE_SIM)) || {}; } catch { return {}; } };
+  const salvarSim = () => {
+    const sim = {};
+    for (const c of cartoes()) {
+      const dias = [...c.querySelectorAll('.cal button.plano')].map((b) => b.dataset.dia);
+      if (dias.length) sim[c.dataset.nome] = dias;
+    }
+    try { localStorage.setItem(CHAVE_SIM, JSON.stringify(sim)); } catch {}
+  };
+  function aplicarSim() {
+    const sim = lerSim(), hoje = hojeSP();
+    for (const c of cartoes()) {
+      const dias = new Set((sim[c.dataset.nome] || []).filter((d) => d >= hoje)); // dia que passou não conta mais
+      c.querySelectorAll('.cal button[data-dia]').forEach((b) => marcarPlano(b, dias.has(b.dataset.dia)));
+      simular(c);
+    }
+  }
+  function marcarPlano(b, sim) { b.classList.toggle('plano', sim); b.setAttribute('aria-pressed', sim); }
+  // Mesma conta do servidor (cartao/folga), com as faltas simuladas somadas
+  function simular(c) {
+    const hoje = hojeSP();
+    const k = [...c.querySelectorAll('.cal button.plano')].filter((b) => b.dataset.dia >= hoje).reduce((t, b) => t + +b.dataset.n, 0);
+    const R = c.dataset.restantes - k, A = +c.dataset.aulasRestantes, F = +c.dataset.faltas + k, P = +c.dataset.permitidas;
+    const pode = Math.max(0, Math.min(R, A)), pct = A > 0 ? Math.round((pode / A) * 100) : 0;
+    const f = R < 0 ? -1 : A <= 0 ? 1 : Math.min(R, A) / A;
+    const nivel = R <= 0 || f < 0.25 ? 'ruim' : f < 0.5 ? 'medio' : 'bom';
+    c.classList.remove('bom', 'medio', 'ruim');
+    c.classList.add(nivel);
+    c.dataset.podeAgora = pode;
+    c.dataset.nivelAgora = nivel;
+    const big = c.querySelector('.big');
+    if (big && A > 0) {
+      const [tit, num, sub] = R < 0
+        ? ['Passou do limite', '+' + -R, -R === 1 ? 'falta a mais' : 'faltas a mais']
+        : [R === 0 ? 'Não pode mais faltar' : 'Pode faltar', pode, 'de ' + A + (A === 1 ? ' aula restante' : ' aulas restantes') + (R > 0 ? ' · ' + pct + '%' : '')];
+      c.querySelector('.hero-titulo').textContent = tit;
+      big.textContent = num;
+      c.querySelector('.hero-sub').textContent = sub;
+    }
+    const planejados = Math.min(k, A - pode);
+    c.querySelectorAll('.blocos i').forEach((b, j) => { b.classList.toggle('livre', j < pode); b.classList.toggle('plano', j >= pode && j < pode + planejados); });
+    const v = c.querySelector('.stats > div:nth-child(2) .v');
+    v.firstChild.textContent = F;
+    c.querySelector('.barra.falt').style.width = (P > 0 ? Math.min(100, (F / P) * 100) : 0).toFixed(1) + '%';
+    const aviso = c.querySelector('.sim');
+    aviso.hidden = k === 0;
+    aviso.querySelector('b').textContent = k === 1 ? '1 falta' : k + ' faltas';
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.cal button[data-dia]');
+    const limpar = e.target.closest('.limpar-sim');
+    if (!b && !limpar) return;
+    e.preventDefault(); // "limpar" fica dentro do <summary>: não abre/fecha o calendário
+    const c = (b || limpar).closest('.card');
+    if (b) marcarPlano(b, !b.classList.contains('plano'));
+    else c.querySelectorAll('.cal button.plano').forEach((x) => marcarPlano(x, false));
+    simular(c);
+    salvarSim();
+    montarHoje();
+  });
+
+  // Painel "Hoje": próximas aulas do dia (ou do próximo dia com aula) e se dá pra faltar
+  function montarHoje() {
+    const painel = document.querySelector('.hoje');
+    if (!painel) return;
+    const hoje = hojeSP(), agora = agoraSP();
+    const minutos = (h) => +h.slice(0, 2) * 60 + +h.slice(3, 5);
+    const aulas = cartoes().flatMap((c) => JSON.parse(c.dataset.aulas || '[]').map((d) => ({ dia: d.slice(0, 10), hora: d.slice(11, 16), c })))
+      .filter((a) => a.dia > hoje || (a.dia === hoje && minutos(a.hora) + 100 > minutos(agora))) // aula de 1h40 ainda em andamento conta
+      .sort((a, b) => (a.dia + a.hora).localeCompare(b.dia + b.hora));
+    if (!aulas.length) { painel.hidden = true; return; }
+    const dia = aulas[0].dia, doDia = aulas.filter((a) => a.dia === dia);
+    const amanha = new Date(Date.parse(hoje + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10);
+    const dataCurta = new Date(dia + 'T12:00:00Z').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC' }).replace('.', '');
+    // Dá pra faltar o dia todo se cada matéria tem faltas livres pra todas as aulas dela nesse dia
+    const precisa = new Map();
+    for (const a of doDia) if (!botaoDoDia(a)?.classList.contains('plano')) precisa.set(a.c, (precisa.get(a.c) || 0) + 1);
+    const diaTodo = [...precisa].every(([c, n]) => +c.dataset.podeAgora >= n);
+    const el = (tag, cls, txt) => { const x = document.createElement(tag); if (cls) x.className = cls; if (txt != null) x.textContent = txt; return x; };
+    const cab = el('div', 'hoje-cab');
+    cab.append(el('b', null, dia === hoje ? 'Hoje' : dia === amanha ? 'Amanhã' : 'Próximas aulas'),
+      el('span', 'hoje-resumo ' + (diaTodo ? 'ok' : 'nao'), dataCurta + ' · ' + (precisa.size === 0 ? 'todas simuladas' : diaTodo ? 'dá pra faltar o dia todo' : 'não dá pra faltar tudo')));
+    const lista = el('div', 'hoje-lista');
+    for (const a of doDia) {
+      const plano = botaoDoDia(a)?.classList.contains('plano'), pode = +a.c.dataset.podeAgora;
+      const item = el('button', 'aula-hoje ' + a.c.dataset.nivelAgora + (plano ? ' plano' : ''));
+      item.type = 'button';
+      item.title = plano ? 'Tirar a falta simulada' : 'Simular falta nessa aula';
+      item.setAttribute('aria-pressed', !!plano);
+      const hora = el('span', 'hora', a.hora);
+      if (dia === hoje && minutos(a.hora) <= minutos(agora)) hora.append(el('small', 'agora', 'agora'));
+      item.append(hora, el('span', 'mat', a.c.querySelector('h2').textContent),
+        el('span', 'ver', plano ? 'falta simulada' : pode > 0 ? 'pode faltar · sobram ' + pode : 'não falte'));
+      item.onclick = () => botaoDoDia(a)?.click();
+      lista.append(item);
+    }
+    painel.replaceChildren(cab, lista);
+    painel.hidden = false;
+  }
+  const botaoDoDia = (a) => a.c.querySelector('.cal button[data-dia="' + a.dia + '"]');
   // Menu de ordem próprio: botão + lista (mouse, toque e teclado)
   const botaoOrdem = () => document.getElementById('ordem');
   const menuOrdem = () => document.querySelector('.ordem-menu');
@@ -789,7 +933,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   });
   // Abre e fecha o calendário deslizando (o <details> sozinho só pula)
   document.addEventListener('click', (e) => {
-    if (e.target.closest('.alca')) return e.preventDefault(); // alça de arrastar não abre o calendário
+    if (e.target.closest('.alca, .limpar-sim')) return e.preventDefault(); // alça e "limpar" não abrem o calendário
     const s = e.target.closest('.card > summary');
     if (!s || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     e.preventDefault();
@@ -825,6 +969,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     ${botao}
   </div>
   ${aviso}
+  <section class="hoje" aria-label="Próximas aulas" hidden></section>
   <section class="grade">${materias.map(cartao).join('')}</section>
   ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
 </main>
