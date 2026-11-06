@@ -351,7 +351,7 @@ function cartao(m, i) {
       : [m.restantes === 0 ? 'Não pode mais faltar' : 'Pode faltar', podeFaltar,
          'de ' + plural(m.aulasRestantes, 'aula restante', 'aulas restantes') + (m.restantes > 0 ? ' · ' + pct + '%' : '')];
   // Um bloco por aula restante: cheios são as que ainda dá pra faltar
-  const blocos = Array.from({ length: m.aulasRestantes }, (_, i) => `<i${i < podeFaltar ? ' class="livre"' : ''}></i>`).join('');
+  const blocos = Array.from({ length: m.aulasRestantes }, (_, j) => `<i style="--n:${j}"${j < podeFaltar ? ' class="livre"' : ''}></i>`).join('');
   const faltamPresencas = Math.max(0, m.presencasNecessarias - m.presencas);
   const notaPresencas = faltamPresencas === 0 ? 'presença garantida' : 'faltam ' + faltamPresencas + ' de ' + m.aulasRestantes;
   const barra = (v, t) => (t > 0 ? Math.min(100, Math.max(0, (v / t) * 100)) : 0).toFixed(1);
@@ -359,7 +359,7 @@ function cartao(m, i) {
   const curta = (t, opc) => esc(dataBR(t, opc).replace('.', ''));
 
   return `
-  <details class="card ${nivel}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}">
+  <details class="card ${nivel}" style="--c:${i}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}">
     <summary>
     <div class="cab">
       <h2>${esc(nomeBonito(m.nome))}</h2>
@@ -554,6 +554,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .nota { color:var(--sub); font-size:12px; margin-top:4px; }
   .trilho { height:4px; background:var(--trilho); border-radius:2px; margin-top:6px; overflow:hidden; }
   .barra { height:100%; border-radius:2px; }
+  /* Ao abrir: barras crescem e os blocos livres se acendem um a um, cartão por cartão */
+  @keyframes crescer { from { transform:scaleX(0); } }
+  @keyframes acender { from { background:var(--trilho); transform:scaleY(.5); } }
+  @keyframes pulsar { from { box-shadow:0 0 0 0 color-mix(in srgb, var(--nivel) 50%, transparent); } to { box-shadow:0 0 0 12px transparent; } }
+  .barra { transform-origin:left; animation:crescer .8s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--c, 0) * 70ms + 80ms); }
+  .blocos i.livre { animation:acender .4s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--c, 0) * 70ms + var(--n, 0) * 50ms + 150ms); }
+  .card.sem-anim .barra, .card.sem-anim .blocos i { animation:none; } /* não mudou na atualização: fica quieto */
+  .card.mudou { animation:pulsar 1.1s cubic-bezier(.16,1,.3,1) .25s 2; }
+  @media (prefers-reduced-motion: reduce) { .barra, .blocos i, .card.mudou { animation:none !important; } }
   .barra.pres { background:var(--pres); }
   .barra.falt { background:var(--nivel); }
   footer { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:12px; padding-top:10px;
@@ -616,11 +625,32 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const r = await fetch(url, { cache: 'no-store' });
     const novo = new DOMParser().parseFromString(await r.text(), 'text/html');
     if (!r.ok || !novo.querySelector('.grade')) return location.reload(); // ex.: sessão expirou e veio a tela de login
+    // Só anima o que mudou: cartão igual ao de antes entra parado; o que mudou pisca e conta o número
+    const antes = new Map(cartoes().map((c) => [c.dataset.nome, { txt: c.querySelector('summary').textContent, big: c.querySelector('.big')?.textContent }]));
+    for (const c of novo.querySelectorAll('.grade > .card')) {
+      const a = antes.get(c.dataset.nome);
+      if (a && a.txt === c.querySelector('summary').textContent) c.classList.add('sem-anim');
+      else if (a) { c.classList.add('mudou'); c.dataset.bigAntes = a.big ?? ''; }
+    }
     const main = document.querySelector('main');
     main.replaceChildren(main.querySelector('.topo'), ...[...novo.querySelector('main').children].filter((e) => !e.matches('.topo')));
     main.querySelector('.sub').replaceWith(novo.querySelector('.sub')); // horário de atualização fica no .topo
     document.body.dataset.atualizado = novo.body.dataset.atualizado;
     aplicarOrdem(false);
+    document.querySelectorAll('.card.mudou').forEach(contar);
+  }
+  // Número grande vai do valor antigo ao novo
+  function contar(c) {
+    const el = c.querySelector('.big'), de = parseInt(c.dataset.bigAntes, 10), para = parseInt(el?.textContent, 10);
+    if (!el || isNaN(de) || isNaN(para) || de === para || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const sinal = el.textContent.startsWith('+') ? '+' : '', t0 = performance.now();
+    const passo = (t) => {
+      const p = Math.min(1, (t - t0) / 700);
+      el.textContent = sinal + Math.round(de + (para - de) * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(passo);
+    };
+    el.textContent = sinal + de;
+    requestAnimationFrame(passo);
   }
   // Ordem dos cartões: escolhida no seletor e lembrada só neste navegador
   const CHAVE_ORDEM = 'frequencia-ordem';
