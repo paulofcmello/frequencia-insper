@@ -485,7 +485,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
          font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
   main { max-width:1100px; margin:0 auto; padding:40px 16px 56px; }
   h1 { font-size:34px; line-height:1.1; letter-spacing:-.025em; margin:0 0 6px; }
-  .sub { color:var(--sub); margin:0 0 28px; font-size:14px; max-width:70ch; text-wrap:pretty; }
+  .sub { color:var(--sub); margin:0 0 28px; font-size:14px; text-wrap:pretty; }
   .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; align-items:start; }
   .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:20px 20px 16px;
           transition:box-shadow .2s cubic-bezier(.16,1,.3,1); }
@@ -609,7 +609,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     <h1>Frequência</h1>
     ${botao}
   </div>
-  <p class="sub">Atualizado em ${esc(dataBR(atualizadoEm))}${esc(quandoProxima)} · ordenado pela % das aulas restantes que você ainda pode faltar, da menor pra maior</p>
+  <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)} · ordenado por quanto ainda dá pra faltar</p>
   ${aviso}
   <section class="grade">${materias.map(cartao).join('')}</section>
   ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
