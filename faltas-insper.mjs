@@ -940,8 +940,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const pode = Math.max(0, Math.min(R, A)), pct = A > 0 ? Math.round((pode / A) * 100) : 0;
     const f = R < 0 ? -1 : A <= 0 ? 1 : Math.min(R, A) / A;
     const nivel = R <= 0 || f < 0.25 ? 'ruim' : f < 0.5 ? 'medio' : 'bom';
-    c.classList.remove('bom', 'medio', 'ruim');
-    c.classList.add(nivel);
+    // A cor do cartão fica a real: simular muda os números, não a cor
     c.dataset.podeAgora = pode;
     c.dataset.nivelAgora = nivel;
     const big = c.querySelector('.big');
