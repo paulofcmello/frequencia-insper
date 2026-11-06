@@ -310,7 +310,7 @@ function calendario(m) {
   meses[atual] = meses[atual].replace(' hidden>', '>');
   return `${meses.join('')}
     <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>‹</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>›</button></div>
-    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span></div>
+    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span></div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
 
@@ -501,11 +501,13 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .dias .foi { background:var(--trilho); color:var(--txt); }
   .dias .falta { background:var(--ruim); color:#fff; font-weight:600; }
   .dias .feriado { background:repeating-linear-gradient(45deg,var(--trilho) 0 3px,transparent 3px 6px); color:var(--txt); text-decoration:line-through; }
-  .dias .hoje { outline:2px solid var(--txt); outline-offset:-1px; font-weight:700; }
+  .dias .hoje { position:relative; z-index:1; font-weight:800; color:var(--txt); box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--medio); }
+  .dias .hoje.aula, .dias .hoje.falta { color:#fff; }
   .legenda { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; color:var(--sub); }
   .legenda span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px; }
   .legenda .aula::before { background:var(--pres); } .legenda .foi::before { background:var(--trilho); }
   .legenda .falta::before { background:var(--ruim); }
+  .legenda .hoje::before { box-shadow:inset 0 0 0 2px var(--medio); }
   .legenda .feriado::before { background:repeating-linear-gradient(45deg,var(--sub) 0 2px,transparent 2px 4px); }
   .cal-feriados, .cal-vazio { color:var(--sub); margin-top:8px; }
 </style>
