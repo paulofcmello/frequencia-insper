@@ -678,20 +678,21 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
                    -webkit-backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--borda); }
   .premium h1 { font-size:clamp(30px, 4vw, 44px); font-weight:700; letter-spacing:-.035em; }
   .premium .grade { gap:22px; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); }
-  .premium .card { border:0; border-radius:24px; padding:24px 24px 16px;
+  .premium .card { border:0; border-radius:24px; padding:18px 22px 12px;
                    box-shadow:0 0 0 1px var(--borda), 0 2px 4px rgb(0 0 0 / .03), 0 12px 32px -12px rgb(0 0 0 / .10);
                    transition:transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1); }
-  .premium .card:hover { transform:translateY(-3px);
+  .premium .card.arrastando { transition:none; } /* o arrastado segue o dedo sem atraso */
+  .premium body:not(.arrastando) .card:hover { transform:translateY(-3px);
                          box-shadow:0 0 0 1px var(--borda), 0 4px 8px rgb(0 0 0 / .04), 0 28px 56px -20px rgb(0 0 0 / .18); }
   .premium h2 { font-size:19px; font-weight:650; letter-spacing:-.02em; }
-  .premium .hero { margin-top:14px; }
-  .premium .big { font-size:64px; font-weight:700; letter-spacing:-.045em; }
-  .premium .blocos { gap:3px; margin-top:16px; } .premium .blocos i { height:6px; border-radius:980px; }
-  .premium .stats { margin-top:20px; gap:24px; }
-  .premium .k { text-transform:none; font-size:13px; } .premium .v { font-size:24px; font-weight:600; letter-spacing:-.03em; }
+  .premium .hero { margin-top:8px; }
+  .premium .big { font-size:52px; font-weight:700; letter-spacing:-.045em; }
+  .premium .blocos { gap:3px; margin-top:12px; } .premium .blocos i { height:6px; border-radius:980px; }
+  .premium .stats { margin-top:14px; gap:24px; }
+  .premium .k { text-transform:none; font-size:13px; } .premium .v { font-size:22px; font-weight:600; letter-spacing:-.03em; }
   .premium .trilho { height:5px; border-radius:980px; } .premium .barra { border-radius:980px; }
-  .premium footer { margin-top:18px; padding-top:14px; }
-  @media (prefers-reduced-motion: reduce) { .premium .card:hover { transform:none; } }
+  .premium footer { margin-top:12px; padding-top:10px; }
+  @media (prefers-reduced-motion: reduce) { .premium body:not(.arrastando) .card:hover { transform:none; } }
   /* Alternador Original / Premium */
   .versao { position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
             display:flex; padding:3px; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
