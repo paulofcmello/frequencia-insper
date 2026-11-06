@@ -799,6 +799,17 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .sim b { color:var(--txt); font-weight:600; }
   .premium .limpar-sim { padding:2px 9px; border-radius:980px; background:var(--card); color:var(--pres); text-decoration:none; font-weight:600;
                          box-shadow:0 1px 2px rgb(0 0 0 / .08); }
+  /* Melhores dias pra faltar: três cartõezinhos de vidro acima da grade */
+  .melhores { margin:0 0 22px; }
+  .melhores h2 { font-size:15px; font-weight:650; color:var(--sub); margin:0 0 10px 4px; letter-spacing:-.01em; }
+  .melhores ol { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:0; padding:0; list-style:none; }
+  .melhores li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:14px 18px; border-radius:20px;
+                 background:var(--card); box-shadow:inset 0 1px 0 var(--brilho, transparent), inset 0 0 0 1px var(--borda), 0 10px 26px -14px var(--sombra, rgb(0 0 0 / .2)); }
+  .premium .melhores li { backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%); }
+  .melhores li b { font-size:17px; font-weight:650; letter-spacing:-.02em; text-transform:capitalize; }
+  .melhores li span { font-size:13px; font-weight:600; color:var(--bom); }
+  .melhores li small { grid-column:1 / -1; font-size:12.5px; color:var(--sub); line-height:1.45; }
+  .melhores p { margin:0 0 0 4px; color:var(--sub); font-size:14px; }
   /* Holofote: os pontinhos perto do mouse/dedo crescem e escurecem, seguindo com leve atraso */
   @property --mx { syntax:'<length>'; inherits:false; initial-value:-999px; }
   @property --my { syntax:'<length>'; inherits:false; initial-value:-999px; }
@@ -929,7 +940,42 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       c.querySelectorAll('.cal button[data-dia]').forEach((b) => marcar(b, f.has(b.dataset.dia) ? 'plano' : v.has(b.dataset.dia) ? 'vou' : ''));
       simular(c);
     }
+    melhoresDias();
   }
+  // Melhores dias pra faltar nas próximas 3 semanas: o dia que gasta a menor fração da folga da matéria mais afetada.
+  // Fica de fora dia em que alguma matéria estouraria o limite ou que você marcou "vou com certeza" (prova, apresentação).
+  function melhoresDias() {
+    const main = document.querySelector('main'), grade = main?.querySelector('.grade');
+    if (!grade) return;
+    main.querySelector('.melhores')?.remove();
+    const hoje = hojeSP(), fim = new Date(Date.now() + 21 * 864e5).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+    const vou = ler(CHAVE_VOU), dias = new Map();
+    for (const c of cartoes()) {
+      const R = +c.dataset.restantes, certos = new Set(vou[c.dataset.nome] || []);
+      c.querySelectorAll('.cal button[data-dia]').forEach((b) => {
+        const d = b.dataset.dia;
+        if (d <= hoje || d > fim) return;
+        if (!dias.has(d)) dias.set(d, { d, itens: [], bloqueado: false });
+        const dia = dias.get(d), n = +b.dataset.n;
+        if (certos.has(d) || R - n < 0) dia.bloqueado = true;
+        dia.itens.push({ nome: c.querySelector('h2')?.textContent || c.dataset.nome, n, sobra: R - n, custo: R > 0 ? n / R : Infinity });
+      });
+    }
+    const bons = [...dias.values()].filter((x) => !x.bloqueado)
+      .map((x) => ({ ...x, custo: Math.max(...x.itens.map((i) => i.custo)), aulas: x.itens.reduce((t, i) => t + i.n, 0) }))
+      .sort((a, b) => a.custo - b.custo || a.aulas - b.aulas || a.d.localeCompare(b.d)).slice(0, 3);
+    const dataBR = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC' }).replace('.', '');
+    const plural = (n, s) => n + ' ' + s + (n === 1 ? '' : 's');
+    const escH = (t) => t.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+    const sec = document.createElement('section');
+    sec.className = 'melhores';
+    sec.innerHTML = '<h2>Melhores dias pra faltar</h2>' + (bons.length
+      ? '<ol>' + bons.map((x) => '<li><b>' + dataBR(x.d) + '</b><span>' + plural(x.aulas, 'aula') + '</span><small>' +
+          x.itens.map((i) => escH(i.nome) + ' · ainda sobram ' + i.sobra).join('<br>') + '</small></li>').join('') + '</ol>'
+      : '<p>Nenhum dia nas próximas 3 semanas cabe na folga de todas as matérias.</p>');
+    grade.before(sec);
+  }
+  addEventListener('DOMContentLoaded', melhoresDias);
   function marcar(b, tipo) { b.classList.toggle('plano', tipo === 'plano'); b.classList.toggle('vou', tipo === 'vou'); b.setAttribute('aria-pressed', !!tipo); }
   // Mesma conta do servidor (cartao/folga), com as faltas simuladas somadas e as aulas certas fora das restantes
   function simular(c) {
