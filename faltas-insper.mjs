@@ -749,10 +749,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   @media (prefers-reduced-transparency: reduce) { html.premium { --vidro:var(--bg); --card:var(--bg); } }
   /* Liquid Glass de verdade (só Chromium, html.lente): a barra e o alternador refratam o que passa por baixo, como lente */
   .premium .ordem-menu { backdrop-filter:none; -webkit-backdrop-filter:none; } /* vidro dentro de vidro quebra */
-  .premium.lente .topo, .premium.lente .versao { backdrop-filter:url(#lente) blur(5px) saturate(190%) brightness(1.04);
+  /* --lente é um filtro SVG feito sob medida pra cada elemento (tamanho, cantos, tela) pelo script "lentes" */
+  .premium.lente .topo, .premium.lente .versao, .premium.lente .card { backdrop-filter:var(--lente, blur(28px)) saturate(180%); -webkit-backdrop-filter:var(--lente, blur(28px)) saturate(180%); }
+  /* Vidro quase incolor: a cor vem do fundo; o que desenha a peça é a borda polida */
+  .premium.lente { --card:rgb(255 255 255 / .42); }
+  @media (prefers-color-scheme: dark) { .premium.lente { --card:rgb(44 44 46 / .42); } }
+  .premium.lente .topo, .premium.lente .versao { background:linear-gradient(180deg, color-mix(in srgb, var(--bg) 52%, transparent), color-mix(in srgb, var(--bg) 40%, transparent));
     box-shadow:inset 0 1px 0 var(--brilho), inset 0 -1px 0 rgb(255 255 255 / .25), inset 1px 0 0 rgb(255 255 255 / .18),
                inset -1px 0 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05), 0 16px 40px -14px var(--sombra); }
-  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao { backdrop-filter:none; } }
+  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao, .premium.lente .card { backdrop-filter:none; } }
   /* Alternador Original / Premium */
   .versao { touch-action:none; position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
             display:flex; padding:3px; isolation:isolate; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
@@ -1112,8 +1117,85 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   <p class="vazio-hoje" hidden>Sem aulas hoje.</p>
   ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
 </main>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lente" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='x'%3E%3Cstop offset='0' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient id='y' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%230f0'/%3E%3C/linearGradient%3E%3Cfilter id='b'%3E%3CfeGaussianBlur stdDeviation='3'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23x)'/%3E%3Crect width='100' height='100' fill='url(%23y)' style='mix-blend-mode:screen'/%3E%3Crect x='5' y='20' width='90' height='60' rx='8' fill='rgb(128,128,0)' filter='url(%23b)'/%3E%3C/svg%3E" preserveAspectRatio="none" result="mapa"/><feDisplacementMap in="SourceGraphic" in2="mapa" scale="40" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
-<script>if (navigator.userAgentData) document.documentElement.classList.add('lente'); // backdrop-filter com url() só funciona no Chromium</script>
+<script>
+/*!
+ * Lentes de vidro: porte em JS puro da refração da skill liquid-glass (stormaref), que por sua vez porta o shader de
+ * liquid-glass-js (https://github.com/dashersw/liquid-glass-js) — Copyright (c) 2025 Armagan Amcalar, MIT.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of that software to deal in it without
+ * restriction, provided this notice travels with it; it is provided "as is", without warranty of any kind.
+ */
+(() => {
+  // backdrop-filter com url() só pinta no Chromium; o Safari aceita a regra e não desenha nada, por isso não dá pra usar @supports
+  const ua = navigator.userAgentData;
+  if (!(ua ? ua.brands.some((b) => /Chrom|Edge/.test(b.brand)) : navigator.userAgent.includes('Chrome/'))) return;
+  document.documentElement.classList.add('lente');
+  const NS = 'http://www.w3.org/2000/svg';
+  const defs = document.createElementNS(NS, 'svg');
+  defs.setAttribute('width', 0); defs.setAttribute('height', 0); defs.setAttribute('aria-hidden', 'true');
+  defs.style.position = 'absolute';
+  document.body.append(defs);
+  const BLUR = { topo: 8, versao: 4, card: 6 }; // raio do fosco; vezes 0,35 vira o desvio do gaussiano
+  const cache = new Map(); // shortcut: filtros antigos não são apagados; ok pra meia dúzia de tamanhos, refazer com contagem se crescer
+  let n = 0;
+  const mapa = (w, h, r, pw, ph) => {
+    const f = Math.max(.25, Math.min(2, 1400 / Math.max(w, h))), W = Math.ceil(w * f), H = Math.ceil(h * f), m = Math.min(w, h);
+    const dx = new Float32Array(W * H), dy = new Float32Array(W * H);
+    let max = 0;
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const px = (i + .5) / f, py = (j + .5) / f, cx = px / w, cy = py / h;
+      const tx = Math.abs(px - w / 2) - (w / 2 - r), ty = Math.abs(py - h / 2) - (h / 2 - r);
+      const d = Math.max(-(Math.hypot(Math.max(tx, 0), Math.max(ty, 0)) + Math.min(Math.max(tx, ty), 0) - r), 0);
+      const aro = Math.exp(-d * 1.7), total = Math.exp(-d * .5) * .015 + aro * .028;
+      let nx = cx - .5, ny = cy - .5; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+      const canto = Math.exp(-(Math.max(Math.min(cx, 1 - cx), Math.min(cy, 1 - cy)) * m) * .3) * .06;
+      const onda = Math.sin((d / m) * 25) * .26 * aro;
+      const k = j * W + i;
+      dx[k] = (nx * (total + canto) - ny * onda) * pw; dy[k] = (ny * (total + canto) + nx * onda) * ph;
+      max = Math.max(max, Math.abs(dx[k]), Math.abs(dy[k]));
+    }
+    const escala = Math.max(max * 2, 1e-4), vies = escala * (128 / 255 - .5); // 128 não é zero no feDisplacementMap
+    const tela = document.createElement('canvas'); tela.width = W; tela.height = H;
+    const ctx = tela.getContext('2d'), img = ctx.createImageData(W, H);
+    for (let k = 0; k < W * H; k++) {
+      img.data[k * 4] = 255 * (.5 + (dx[k] - vies) / escala); img.data[k * 4 + 1] = 255 * (.5 + (dy[k] - vies) / escala);
+      img.data[k * 4 + 2] = 128; img.data[k * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return { url: tela.toDataURL(), escala };
+  };
+  const filtro = (w, h, r, blur) => {
+    const pw = innerWidth, ph = innerHeight, chave = [w, h, r, pw, ph, blur].join();
+    const pronto = cache.get(chave);
+    if (pronto?.isConnected) return pronto.id;
+    const { url, escala } = mapa(w, h, r, pw, ph), desvio = blur * .35, mg = escala / 2 + 3 * desvio;
+    const fl = document.createElementNS(NS, 'filter');
+    fl.id = 'lente' + n++;
+    Object.entries({ filterUnits: 'userSpaceOnUse', x: -mg, y: -mg, width: w + 2 * mg, height: h + 2 * mg, 'color-interpolation-filters': 'sRGB' }).forEach(([k, v]) => fl.setAttribute(k, v));
+    fl.innerHTML = '<feImage href="' + url + '" x="0" y="0" width="' + w + '" height="' + h + '" preserveAspectRatio="none" result="m"/>' +
+      '<feDisplacementMap in="SourceGraphic" in2="m" scale="' + escala + '" xChannelSelector="R" yChannelSelector="G"/>' +
+      '<feGaussianBlur stdDeviation="' + desvio + '"/>';
+    defs.append(fl); cache.set(chave, fl);
+    return fl.id;
+  };
+  const aplicar = (el) => {
+    const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+    if (!w || !h) return;
+    const rr = getComputedStyle(el).borderTopLeftRadius, r = Math.min(rr.endsWith('%') ? parseFloat(rr) / 100 * Math.min(w, h) : parseFloat(rr) || 0, Math.min(w, h) / 2);
+    const tipo = el.classList.contains('topo') ? 'topo' : el.classList.contains('versao') ? 'versao' : 'card';
+    el.style.setProperty('--lente', 'url(#' + filtro(w, h, r, BLUR[tipo]) + ')');
+  };
+  // Refaz no próximo quadro quando o elemento muda de tamanho (ex.: abrir o calendário) e, com folga, quando a janela muda
+  const fila = new Set(); let quadro = 0;
+  const agendar = (el) => { fila.add(el); quadro ||= requestAnimationFrame(() => { quadro = 0; fila.forEach(aplicar); fila.clear(); }); };
+  const ro = new ResizeObserver((es) => es.forEach((e) => agendar(e.target)));
+  const vistos = new WeakSet();
+  const varrer = () => document.querySelectorAll('.topo, .versao, .grade > .card').forEach((el) => { if (!vistos.has(el)) { vistos.add(el); ro.observe(el); } });
+  varrer();
+  new MutationObserver(varrer).observe(document.querySelector('main'), { childList: true, subtree: true }); // cartões novos depois de "Atualizar"
+  let espera;
+  addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(() => document.querySelectorAll('.topo, .versao, .grade > .card').forEach(agendar), 180); });
+})();
+</script>
 <div class="versao" role="group" aria-label="Versão do visual"><span class="pilula" aria-hidden="true"></span>
   <button type="button" data-v="original">Original</button><button type="button" data-v="premium">Premium</button>
 </div>
