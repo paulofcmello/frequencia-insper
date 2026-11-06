@@ -719,6 +719,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium #simulador::after { transition:transform .5s var(--mola), width .45s var(--mola), height .45s var(--mola), left .45s var(--mola),
                                          top .45s var(--mola), background-color .25s, box-shadow .25s; }
   /* Enquanto o dedo segura: a bolinha vira uma lente de vidro maior que o trilho, e só volta ao soltar */
+  #simulador { touch-action:none; }
+  #simulador.arrastando::after { transform:translateX(var(--kx)) !important; transition-property:width, height, left, top, background-color, box-shadow; }
   .premium #simulador.apertado::after { top:-5px; left:-10px; width:42px; height:32px; background:rgb(255 255 255 / .1); box-shadow:var(--arco); }
   .premium #atualizar { padding:9px 20px; }
   .premium .sair { border:0; background:transparent; }
@@ -1137,7 +1139,31 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       addEventListener('pointerup', fim); addEventListener('pointercancel', fim);
     });
     segurar(caixa, 'apertando');
-    const sim = document.querySelector('#simulador'); if (sim) segurar(sim, 'apertado');
+    const sim = document.querySelector('#simulador');
+    if (sim) {
+      segurar(sim, 'apertado');
+      // Arrastar a bolinha do switch; ao soltar, liga se passou da metade
+      let a = null, ignorar = false;
+      sim.addEventListener('pointerdown', (e) => { a = { x: e.clientX, base: sim.getAttribute('aria-checked') === 'true' ? 16 : 0, moveu: false }; sim.setPointerCapture(e.pointerId); });
+      sim.addEventListener('pointermove', (e) => {
+        if (!a) return;
+        const dx = e.clientX - a.x;
+        if (Math.abs(dx) > 3) { a.moveu = true; sim.classList.add('arrastando'); }
+        if (a.moveu) sim.style.setProperty('--kx', Math.min(16, Math.max(0, a.base + dx)) + 'px');
+      });
+      const fim = (valer) => {
+        if (!a) return;
+        const { moveu } = a; a = null;
+        if (!moveu) return;
+        const kx = parseFloat(sim.style.getPropertyValue('--kx'));
+        sim.classList.remove('arrastando'); sim.style.removeProperty('--kx');
+        ignorar = true; setTimeout(() => ignorar = false, 300); // o clique que vem depois do arrasto não alterna de novo
+        if (valer && (kx > 8) !== (sim.getAttribute('aria-checked') === 'true')) ligarSimulador(kx > 8);
+      };
+      sim.addEventListener('pointerup', () => fim(true));
+      sim.addEventListener('pointercancel', () => fim(false));
+      sim.addEventListener('click', (e) => { if (ignorar) { ignorar = false; e.stopImmediatePropagation(); e.preventDefault(); } });
+    }
     const escolher = (v) => {
       document.documentElement.classList.toggle('premium', v === 'premium');
       try { localStorage.versao = v; } catch {}
