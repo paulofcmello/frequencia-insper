@@ -793,6 +793,12 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium body::after { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
     background:radial-gradient(90% 55% at 50% -10%, color-mix(in srgb, var(--pres) 14%, transparent), transparent 70%); }
   @media (prefers-color-scheme: dark) { .premium body::before { background-image:radial-gradient(circle, rgb(255 255 255 / .14) 1.1px, transparent 1.5px); } }
+  /* Aviso "Simulando…": chip neutro (vermelho fica só pra falta de verdade) */
+  .premium .sim { width:max-content; max-width:100%; margin-top:10px; padding:4px 6px 4px 11px; border-radius:980px; color:var(--sub);
+                  background:var(--trilho); font-size:12px; }
+  .premium .sim b { color:var(--txt); font-weight:600; }
+  .premium .limpar-sim { padding:2px 9px; border-radius:980px; background:var(--card); color:var(--pres); text-decoration:none; font-weight:600;
+                         box-shadow:0 1px 2px rgb(0 0 0 / .08); }
   /* Holofote: os pontinhos perto do mouse/dedo crescem e escurecem, seguindo com leve atraso */
   @property --mx { syntax:'<length>'; inherits:false; initial-value:-999px; }
   @property --my { syntax:'<length>'; inherits:false; initial-value:-999px; }
