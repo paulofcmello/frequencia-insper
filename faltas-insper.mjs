@@ -299,12 +299,17 @@ function calendario(m) {
       dias += `<span class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''}>${i}</span>`;
     }
     const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
-    meses.push(`<div class="mes"><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
+    meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
   }
   const listaFeriados = (m.feriados || [])
     .map((f) => f.dia.split('-').reverse().slice(0, 2).join('/') + ' ' + esc(f.nome))
     .join(' · ');
-  return `<div class="meses">${meses.join('')}</div>
+  // Mostra só o mês atual (ou o mais próximo do semestre); as setas trocam
+  let atual = meses.findIndex((x) => !x.includes(' hidden>'));
+  if (atual < 0) atual = hoje < m.diasAula[0] ? 0 : meses.length - 1;
+  meses[atual] = meses[atual].replace(' hidden>', '>');
+  return `${meses.join('')}
+    <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>‹</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>›</button></div>
     <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span></div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
@@ -483,7 +488,11 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   summary { list-style:none; cursor:pointer; } summary::-webkit-details-marker { display:none; }
   .ver-cal { float:right; color:var(--pres); } .ver-cal::after { content:' ▾'; } details[open] .ver-cal::after { content:' ▴'; }
   .cal { margin-top:12px; padding-top:12px; border-top:1px solid var(--borda); font-size:12px; }
-  .meses { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+  .mes { max-width:260px; margin:0 auto; }
+  .nav-mes { display:flex; justify-content:center; gap:24px; margin-top:6px; }
+  .nav-mes button { font:inherit; font-size:20px; line-height:1; width:36px; height:30px; border-radius:8px; border:1px solid var(--borda);
+                    background:transparent; color:var(--txt); cursor:pointer; }
+  .nav-mes button:disabled { opacity:.3; cursor:default; }
   .mes-nome { font-weight:600; text-transform:capitalize; margin-bottom:4px; }
   .dias { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; }
   .dias b { color:var(--sub); font-weight:500; font-size:10px; }
@@ -502,6 +511,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
 </style>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
+<script>
+  function trocarMes(b, passo) {
+    const cal = b.closest('.cal'), meses = [...cal.querySelectorAll('.mes')], i = meses.findIndex((x) => !x.hidden);
+    const j = Math.min(meses.length - 1, Math.max(0, i + passo));
+    meses[i].hidden = true; meses[j].hidden = false;
+    const [ant, prox] = cal.querySelectorAll('.nav-mes button');
+    ant.disabled = j === 0; prox.disabled = j === meses.length - 1;
+  }
+</script>
 <main>
   <div class="topo">
     <h1>Frequência</h1>
