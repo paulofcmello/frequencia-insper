@@ -172,7 +172,15 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
   ).flat();
   const aulasPorTurma = {};
   const vistos = new Set();
+  const feriados = {}; // 'AAAA-MM-DD' → nome; recesso de vários dias vira um dia por entrada
   for (const ev of eventos) {
+    if (ev.tipoEvento === 'FERIADO' || ev.tipoEvento === 'RECESSO') {
+      const nome = String(ev.descricao || ev.title).replace(/^Evento:\s*/, '');
+      const fim = String(ev.endStr || ev.startStr).slice(0, 10);
+      for (let d = new Date(String(ev.startStr).slice(0, 10) + 'T12:00:00Z'); d.toISOString().slice(0, 10) <= fim; d.setUTCDate(d.getUTCDate() + 1)) {
+        feriados[d.toISOString().slice(0, 10)] ||= nome;
+      }
+    }
     if (ev.tipoEvento !== 'AULA' || vistos.has(ev.eventId)) continue;
     vistos.add(ev.eventId);
     const turma = corrigirTurma((String(ev.descricao).match(/Turma: (\S+)/) || [])[1], ev);
@@ -204,6 +212,12 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
       const dadas = aulas.length
         ? aulas.filter((a) => a.endDate <= hoje.getTime()).length
         : Math.round((nivel.aulasMinistradas ?? m.cargaHoraria) / horasPorAula);
+      const diasAula = aulas.map((a) => String(a.startStr).slice(0, 16)).sort();
+      // Só os feriados que caem num dia da semana em que a matéria tem aula, dentro do semestre dela
+      const semana = new Set(diasAula.map((d) => new Date(d.slice(0, 10) + 'T12:00:00Z').getUTCDay()));
+      const feriadosDaMateria = Object.entries(feriados)
+        .filter(([d]) => diasAula.length && d >= diasAula[0] && d <= diasAula.at(-1) && semana.has(new Date(d + 'T12:00:00Z').getUTCDay()))
+        .map(([dia, nome]) => ({ dia, nome }));
       const proxima = aulas.map((a) => a.startDate).filter((t) => t > hoje.getTime()).sort((a, b) => a - b)[0];
       return {
         nome: m.componenteCurricular.trim(),
@@ -218,6 +232,8 @@ async function buscarFrequencia(s, { codPessoa, codAluno }) {
         ultimaAula: aulas.length ? Math.max(...aulas.map((a) => a.startDate)) : null,
         proximaAula: proxima ?? null,
         datas,
+        diasAula,
+        feriados: feriadosDaMateria,
       };
     })
   );
@@ -263,6 +279,36 @@ function proximaAtualizacao(dados, agora = Date.now()) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const dataBR = (t, opc) => new Date(t).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opc });
 
+// Calendário dos meses com aula: aula futura, presença, falta, feriado e hoje
+function calendario(m) {
+  if (!m.diasAula?.length) return '<p class="cal-vazio">Sem agenda de aulas no portal.</p>';
+  const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const aulas = {};
+  for (const d of m.diasAula) (aulas[d.slice(0, 10)] ||= []).push(d.slice(11, 16));
+  const faltas = new Set(m.datas.map((d) => d.split('/').reverse().join('-'))); // portal manda DD/MM/AAAA
+  const feriados = Object.fromEntries((m.feriados || []).map((f) => [f.dia, f.nome]));
+  const meses = [];
+  for (let d = new Date(m.diasAula[0].slice(0, 7) + '-01T12:00:00Z'); d.toISOString().slice(0, 7) <= m.diasAula.at(-1).slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) {
+    const ano = d.getUTCFullYear(), mes = d.getUTCMonth();
+    const nDias = new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate();
+    let dias = '<i></i>'.repeat(d.getUTCDay());
+    for (let i = 1; i <= nDias; i++) {
+      const iso = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+      const tipo = faltas.has(iso) ? 'falta' : feriados[iso] ? 'feriado' : aulas[iso] ? (iso < hoje ? 'foi' : 'aula') : '';
+      const dica = faltas.has(iso) ? 'Falta' : feriados[iso] ? 'Feriado: ' + feriados[iso] : aulas[iso] ? 'Aula ' + aulas[iso].join(', ') : '';
+      dias += `<span class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''}>${i}</span>`;
+    }
+    const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+    meses.push(`<div class="mes"><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
+  }
+  const listaFeriados = (m.feriados || [])
+    .map((f) => f.dia.split('-').reverse().slice(0, 2).join('/') + ' ' + esc(f.nome))
+    .join(' · ');
+  return `<div class="meses">${meses.join('')}</div>
+    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span></div>
+    ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
+}
+
 function cartao(m) {
   const podeFaltar = Math.max(0, Math.min(m.restantes, m.aulasRestantes));
   const pct = m.aulasRestantes > 0 ? Math.round((podeFaltar / m.aulasRestantes) * 100) : 0;
@@ -281,7 +327,8 @@ function cartao(m) {
   const ultimas = m.datas.slice(-3).join(', ');
 
   return `
-  <article class="card ${nivel}">
+  <details class="card ${nivel}">
+    <summary>
     <header>
       <h2>${esc(m.nome)}</h2>
       <div class="restam"><span class="num">${m.aulasRestantes}</span> aulas restantes</div>
@@ -298,8 +345,11 @@ function cartao(m) {
       Aulas dadas: ${m.dadas} de ${m.total}${m.ultimaAula ? ' · última aula ' + dataBR(m.ultimaAula, { day: '2-digit', month: '2-digit' }) : ''}
       ${m.proximaAula ? '<br>Próxima: ' + esc(dataBR(m.proximaAula, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) : ''}
       ${ultimas ? '<br>Últimas faltas: ' + esc(ultimas) : ''}
+      <span class="ver-cal">calendário</span>
     </footer>
-  </article>`;
+    </summary>
+    <div class="cal">${calendario(m)}</div>
+  </details>`;
 }
 
 // Botão do servidor local: chama /atualizar no próprio Mac
@@ -430,6 +480,25 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .sair { font:inherit; font-size:14px; padding:8px 14px; border-radius:980px; border:1px solid var(--borda);
           background:transparent; color:var(--sub); cursor:pointer; }
   .rodape { color:var(--sub); font-size:12px; margin-top:28px; }
+  summary { list-style:none; cursor:pointer; } summary::-webkit-details-marker { display:none; }
+  .ver-cal { float:right; color:var(--pres); } .ver-cal::after { content:' ▾'; } details[open] .ver-cal::after { content:' ▴'; }
+  .cal { margin-top:12px; padding-top:12px; border-top:1px solid var(--borda); font-size:12px; }
+  .meses { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+  .mes-nome { font-weight:600; text-transform:capitalize; margin-bottom:4px; }
+  .dias { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; }
+  .dias b { color:var(--sub); font-weight:500; font-size:10px; }
+  .dias span { border-radius:5px; padding:2px 0; color:var(--sub); }
+  .dias .aula { background:var(--pres); color:#fff; }
+  .dias .foi { background:var(--trilho); color:var(--txt); }
+  .dias .falta { background:var(--ruim); color:#fff; font-weight:600; }
+  .dias .feriado { background:repeating-linear-gradient(45deg,var(--trilho) 0 3px,transparent 3px 6px); color:var(--txt); text-decoration:line-through; }
+  .dias .hoje { outline:2px solid var(--txt); outline-offset:-1px; font-weight:700; }
+  .legenda { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; color:var(--sub); }
+  .legenda span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px; }
+  .legenda .aula::before { background:var(--pres); } .legenda .foi::before { background:var(--trilho); }
+  .legenda .falta::before { background:var(--ruim); }
+  .legenda .feriado::before { background:repeating-linear-gradient(45deg,var(--sub) 0 2px,transparent 2px 4px); }
+  .cal-feriados, .cal-vazio { color:var(--sub); margin-top:8px; }
 </style>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
