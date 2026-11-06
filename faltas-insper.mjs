@@ -924,6 +924,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     }
     gravar(CHAVE_SIM, faltas);
     gravar(CHAVE_VOU, vou);
+    melhoresDias(); // presença garantida tira o dia das sugestões na hora
   };
   function ligarSimulador(on) {
     try { localStorage.setItem(CHAVE_SIM_ON, on ? '1' : '0'); } catch {}
@@ -951,7 +952,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const hoje = hojeSP(), fim = new Date(Date.now() + 21 * 864e5).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
     const vou = ler(CHAVE_VOU), dias = new Map();
     for (const c of cartoes()) {
-      const R = +c.dataset.restantes, certos = new Set(vou[c.dataset.nome] || []);
+      const R = +c.dataset.restantes, certos = new Set([...(vou[c.dataset.nome] || []), ...[...c.querySelectorAll('.cal button.vou')].map((b) => b.dataset.dia)]);
       c.querySelectorAll('.cal button[data-dia]').forEach((b) => {
         const d = b.dataset.dia;
         if (d <= hoje || d > fim) return;
