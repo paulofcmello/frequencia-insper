@@ -364,7 +364,7 @@ function cartao(m) {
         <div class="k">Faltas</div>
         <div class="v">${m.faltas}<small>/${m.permitidas}</small></div>
         <div class="trilho"><div class="barra falt" style="width:${barra(m.faltas, m.permitidas)}%"></div></div>
-        <div class="nota">${ultimas ? 'últimas ' + esc(ultimas) : 'nenhuma falta'}</div>
+        <div class="nota">${ultimas ? esc(ultimas) : 'nenhuma falta'}</div>
       </div>
     </div>
     <footer>
@@ -484,34 +484,34 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   ::selection { background:color-mix(in srgb, var(--pres) 28%, transparent); }
   body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
          font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
-  main { max-width:1100px; margin:0 auto; padding:40px 16px 56px; }
-  h1 { font-size:34px; line-height:1.1; letter-spacing:-.025em; margin:0 0 6px; }
-  .sub { color:var(--sub); margin:0 0 28px; font-size:14px; text-wrap:pretty; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 40px; }
+  h1 { font-size:30px; line-height:1.1; letter-spacing:-.025em; margin:0 0 4px; }
+  .sub { color:var(--sub); margin:0 0 16px; font-size:14px; text-wrap:pretty; }
   .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; align-items:start; }
-  .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:20px 20px 16px;
+  .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:16px 18px 12px;
           transition:box-shadow .2s cubic-bezier(.16,1,.3,1); }
   .card.medio { --nivel:var(--medio); } .card.ruim { --nivel:var(--ruim); }
   .card:hover { box-shadow:0 8px 24px -12px rgb(0 0 0 / .18); }
   summary:focus-visible { outline:2px solid var(--pres); outline-offset:6px; border-radius:10px; }
   h2 { font-size:16px; line-height:1.25; margin:0; letter-spacing:-.01em; text-wrap:balance; }
-  .hero { margin-top:14px; }
-  .hero-titulo { display:block; font-size:15px; color:var(--nivel); margin-bottom:4px; }
+  .hero { margin-top:8px; }
+  .hero-titulo { display:block; font-size:15px; color:var(--nivel); }
   .hero-linha { display:flex; align-items:baseline; gap:10px; }
-  .big { font-size:56px; line-height:.9; font-weight:700; letter-spacing:-.04em; color:var(--nivel); min-width:1ch; }
+  .big { font-size:44px; line-height:.9; font-weight:700; letter-spacing:-.04em; color:var(--nivel); min-width:1ch; }
   .hero-sub { color:var(--sub); font-size:14px; }
-  .blocos { display:flex; gap:4px; margin-top:14px; }
-  .blocos i { flex:1; height:10px; border-radius:3px; background:var(--trilho); }
+  .blocos { display:flex; gap:4px; margin-top:10px; }
+  .blocos i { flex:1; height:8px; border-radius:3px; background:var(--trilho); }
   .blocos i.livre { background:var(--nivel); }
-  .stats { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:12px; }
   .k { color:var(--sub); font-size:12px; font-weight:500; }
   .v { font-size:20px; font-weight:650; letter-spacing:-.02em; line-height:1.3; }
   .v small { font-size:14px; font-weight:500; color:var(--sub); letter-spacing:0; }
-  .nota { color:var(--sub); font-size:12px; margin-top:6px; }
+  .nota { color:var(--sub); font-size:12px; margin-top:4px; }
   .trilho { height:4px; background:var(--trilho); border-radius:2px; margin-top:6px; overflow:hidden; }
   .barra { height:100%; border-radius:2px; }
   .barra.pres { background:var(--pres); }
   .barra.falt { background:var(--nivel); }
-  footer { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:18px; padding-top:12px;
+  footer { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:12px; padding-top:10px;
            border-top:1px solid var(--borda); color:var(--sub); font-size:12.5px; }
   .prox { color:var(--txt); margin-bottom:2px; } .prox b { font-weight:600; }
   .aviso { background:#fff4e5; color:#8a4b00; border:1px solid #ffd8a8; padding:10px 14px; border-radius:10px; margin-bottom:20px; font-size:14px; }
