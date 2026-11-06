@@ -959,6 +959,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     pega = { x: e.clientX - r.left, y: e.clientY - r.top };
     arrastando.classList.add('arrastando');
     document.body.classList.add('arrastando');
+    cartoes().forEach((c) => c.classList.add('sem-anim')); // mover no DOM reinicia as barras; só o solto anima, ao pousar
     seguir(e.clientX, e.clientY);
   });
   document.addEventListener('pointermove', (e) => {
@@ -978,7 +979,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     document.body.classList.remove('arrastando');
     // Pousa na vaga deslizando a partir de onde foi solto
     const a = c.animate([{ transform: de }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.16,1,.3,1)' });
-    a.onfinish = a.oncancel = () => c.classList.remove('arrastando');
+    a.onfinish = a.oncancel = () => c.classList.remove('arrastando', 'sem-anim');
     salvarPersonalizada();
   };
   document.addEventListener('pointerup', soltar);
