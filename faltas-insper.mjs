@@ -309,48 +309,69 @@ function calendario(m) {
   if (atual < 0) atual = hoje < m.diasAula[0] ? 0 : meses.length - 1;
   meses[atual] = meses[atual].replace(' hidden>', '>');
   return `${meses.join('')}
-    <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>‹</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>›</button></div>
+    <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>${SETA_ESQ}</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>${SETA_DIR}</button></div>
     <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span></div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
+
+// Portal manda nomes em caixa alta; deixa legível sem estragar algarismos romanos
+const MINUSCULAS = new Set(['a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'para', 'com']);
+const nomeBonito = (s) => String(s).toLowerCase().split(' ')
+  .map((p, i) => /^[ivx]+$/.test(p) ? p.toUpperCase() : i && MINUSCULAS.has(p) ? p : p.charAt(0).toUpperCase() + p.slice(1))
+  .join(' ');
+
+const seta = (d) => `<svg class="seta" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const SETA_BAIXO = seta('M4 6l4 4 4-4'), SETA_ESQ = seta('M10 4L6 8l4 4'), SETA_DIR = seta('M6 4l4 4-4 4');
 
 function cartao(m) {
   const podeFaltar = Math.max(0, Math.min(m.restantes, m.aulasRestantes));
   const pct = m.aulasRestantes > 0 ? Math.round((podeFaltar / m.aulasRestantes) * 100) : 0;
   const f = folga(m);
   const nivel = m.restantes <= 0 || f < 0.25 ? 'ruim' : f < 0.5 ? 'medio' : 'bom';
-  const notaFaltas = m.restantes < 0
+  const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+  const heroTitulo = m.restantes < 0
     ? 'passou ' + -m.restantes + ' do limite'
-    : m.restantes === 0
-      ? 'não pode mais faltar'
-      : 'pode faltar <b>' + podeFaltar + '/' + m.aulasRestantes + '</b> restantes (' + pct + '%)';
+    : m.restantes === 0 ? 'não pode mais faltar' : m.aulasRestantes > 0 ? 'pode faltar' : 'aulas encerradas';
+  const heroSub = m.aulasRestantes > 0
+    ? 'de ' + plural(m.aulasRestantes, 'aula restante', 'aulas restantes') + (m.restantes > 0 ? ' · ' + pct + '%' : '')
+    : 'sem aulas restantes';
+  // Um bloco por aula restante: cheios são as que ainda dá pra faltar
+  const blocos = Array.from({ length: m.aulasRestantes }, (_, i) => `<i${i < podeFaltar ? ' class="livre"' : ''}></i>`).join('');
   const faltamPresencas = Math.max(0, m.presencasNecessarias - m.presencas);
-  const notaPresencas = faltamPresencas === 0
-    ? 'presença garantida'
-    : 'faltam <b>' + faltamPresencas + '</b> de ' + m.aulasRestantes + ' aulas';
+  const notaPresencas = faltamPresencas === 0 ? 'presença garantida' : 'faltam ' + faltamPresencas + ' de ' + m.aulasRestantes;
   const barra = (v, t) => (t > 0 ? Math.min(100, Math.max(0, (v / t) * 100)) : 0).toFixed(1);
-  const ultimas = m.datas.slice(-3).join(', ');
+  const ultimas = m.datas.slice(-3).map((d) => d.slice(0, 5)).join(', '); // DD/MM/AAAA → DD/MM
+  const curta = (t, opc) => esc(dataBR(t, opc).replace('.', ''));
 
   return `
   <details class="card ${nivel}">
     <summary>
-    <header>
-      <h2>${esc(m.nome)}</h2>
-      <div class="restam"><span class="num">${m.aulasRestantes}</span> aulas restantes</div>
-    </header>
-    <div class="linha">
-      <div class="rotulo"><span>Presenças <b>${m.presencas}/${m.presencasNecessarias}</b></span><span class="nota pres">${notaPresencas}</span></div>
-      <div class="trilho"><div class="barra pres" style="width:${barra(m.presencas, m.presencasNecessarias)}%"></div></div>
+    <h2>${esc(nomeBonito(m.nome))}</h2>
+    <div class="hero">
+      <span class="big">${podeFaltar}</span>
+      <div class="hero-txt"><b>${heroTitulo}</b><span>${heroSub}</span></div>
     </div>
-    <div class="linha">
-      <div class="rotulo"><span>Faltas <b>${m.faltas}/${m.permitidas}</b></span><span class="nota falt">${notaFaltas}</span></div>
-      <div class="trilho"><div class="barra falt" style="width:${barra(m.faltas, m.permitidas)}%"></div></div>
+    ${blocos ? `<div class="blocos" role="img" aria-label="${podeFaltar} de ${m.aulasRestantes} aulas restantes ainda podem ser faltadas">${blocos}</div>` : ''}
+    <div class="stats">
+      <div>
+        <div class="k">Presenças</div>
+        <div class="v">${m.presencas}<small>/${m.presencasNecessarias}</small></div>
+        <div class="trilho"><div class="barra pres" style="width:${barra(m.presencas, m.presencasNecessarias)}%"></div></div>
+        <div class="nota">${notaPresencas}</div>
+      </div>
+      <div>
+        <div class="k">Faltas</div>
+        <div class="v">${m.faltas}<small>/${m.permitidas}</small></div>
+        <div class="trilho"><div class="barra falt" style="width:${barra(m.faltas, m.permitidas)}%"></div></div>
+        <div class="nota">${ultimas ? 'últimas ' + esc(ultimas) : 'nenhuma falta'}</div>
+      </div>
     </div>
     <footer>
-      Aulas dadas: ${m.dadas} de ${m.total}${m.ultimaAula ? ' · última aula ' + dataBR(m.ultimaAula, { day: '2-digit', month: '2-digit' }) : ''}
-      ${m.proximaAula ? '<br>Próxima: ' + esc(dataBR(m.proximaAula, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) : ''}
-      ${ultimas ? '<br>Últimas faltas: ' + esc(ultimas) : ''}
-      <span class="ver-cal">calendário</span>
+      <div>
+        ${m.proximaAula ? '<div class="prox">Próxima <b>' + curta(m.proximaAula, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + '</b></div>' : ''}
+        <div>${m.dadas}/${m.total} aulas dadas${m.ultimaAula ? ' · última ' + curta(m.ultimaAula, { day: '2-digit', month: '2-digit' }) : ''}</div>
+      </div>
+      <span class="ver-cal">Calendário ${SETA_BAIXO}</span>
     </footer>
     </summary>
     <div class="cal">${calendario(m)}</div>
@@ -448,37 +469,50 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
 <title>Frequência Insper</title>
 <style>
   :root { --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --trilho:#e5e5ea;
-          --bom:#248a3d; --medio:#c93400; --ruim:#d70015; --pres:#0a63c9; --borda:#e5e5ea; }
+          --bom:#248a3d; --medio:#c93400; --ruim:#d70015; --pres:#0a63c9; --borda:#e5e5ea; --on:#fff; }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --trilho:#3a3a3c;
-            --bom:#30d158; --medio:#ff9f0a; --ruim:#ff453a; --pres:#409cff; --borda:#2c2c2e; }
+            --bom:#30d158; --medio:#ff9f0a; --ruim:#ff453a; --pres:#409cff; --borda:#2c2c2e; --on:#000; }
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif; }
-  main { max-width:1100px; margin:0 auto; padding:32px 16px 48px; }
-  h1 { font-size:28px; margin:0 0 4px; }
-  .sub { color:var(--sub); margin:0 0 24px; font-size:14px; }
-  .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
-  .card { background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:18px 18px 14px; border-top:4px solid var(--bom); }
-  .card.medio { border-top-color:var(--medio); } .card.ruim { border-top-color:var(--ruim); }
-  header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:6px; }
-  h2 { font-size:15px; margin:0; letter-spacing:.2px; }
-  .restam { text-align:right; color:var(--sub); font-size:12px; white-space:nowrap; line-height:1.1; }
-  .restam .num { display:block; font-size:26px; font-weight:700; color:var(--txt); }
-  .linha { margin-top:12px; }
-  .rotulo { display:flex; justify-content:space-between; gap:8px; font-size:14px; flex-wrap:wrap; }
-  .nota.pres { color:var(--pres); }
-  .card.bom .nota.falt { color:var(--bom); } .card.medio .nota.falt { color:var(--medio); } .card.ruim .nota.falt { color:var(--ruim); }
-  .trilho { height:8px; background:var(--trilho); border-radius:4px; margin-top:6px; overflow:hidden; }
-  .barra { height:100%; border-radius:4px; }
+  ::selection { background:color-mix(in srgb, var(--pres) 28%, transparent); }
+  body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+         font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
+  main { max-width:1100px; margin:0 auto; padding:40px 16px 56px; }
+  h1 { font-size:34px; line-height:1.1; letter-spacing:-.025em; margin:0 0 6px; }
+  .sub { color:var(--sub); margin:0 0 28px; font-size:14px; max-width:70ch; text-wrap:pretty; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; align-items:start; }
+  .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:20px 20px 16px;
+          transition:box-shadow .2s cubic-bezier(.16,1,.3,1); }
+  .card.medio { --nivel:var(--medio); } .card.ruim { --nivel:var(--ruim); }
+  .card:hover { box-shadow:0 8px 24px -12px rgb(0 0 0 / .18); }
+  summary:focus-visible { outline:2px solid var(--pres); outline-offset:6px; border-radius:10px; }
+  h2 { font-size:16px; line-height:1.25; margin:0; letter-spacing:-.01em; text-wrap:balance; }
+  .hero { display:flex; align-items:center; gap:14px; margin-top:14px; }
+  .big { font-size:56px; line-height:.9; font-weight:700; letter-spacing:-.04em; color:var(--nivel); min-width:1ch; }
+  .hero-txt { display:flex; flex-direction:column; line-height:1.25; }
+  .hero-txt b { font-size:16px; color:var(--nivel); }
+  .hero-txt span { color:var(--sub); font-size:13px; }
+  .blocos { display:flex; gap:4px; margin-top:14px; }
+  .blocos i { flex:1; height:10px; border-radius:3px; background:var(--trilho); }
+  .blocos i.livre { background:var(--nivel); }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
+  .k { color:var(--sub); font-size:12px; font-weight:500; }
+  .v { font-size:20px; font-weight:650; letter-spacing:-.02em; line-height:1.3; }
+  .v small { font-size:14px; font-weight:500; color:var(--sub); letter-spacing:0; }
+  .nota { color:var(--sub); font-size:12px; margin-top:6px; }
+  .trilho { height:4px; background:var(--trilho); border-radius:2px; margin-top:6px; overflow:hidden; }
+  .barra { height:100%; border-radius:2px; }
   .barra.pres { background:var(--pres); }
-  .card.bom .barra.falt { background:var(--bom); } .card.medio .barra.falt { background:var(--medio); } .card.ruim .barra.falt { background:var(--ruim); }
-  footer { margin-top:14px; padding-top:10px; border-top:1px solid var(--borda); color:var(--sub); font-size:12.5px; }
+  .barra.falt { background:var(--nivel); }
+  footer { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:18px; padding-top:12px;
+           border-top:1px solid var(--borda); color:var(--sub); font-size:12.5px; }
+  .prox { color:var(--txt); margin-bottom:2px; } .prox b { font-weight:600; }
   .aviso { background:#fff4e5; color:#8a4b00; border:1px solid #ffd8a8; padding:10px 14px; border-radius:10px; margin-bottom:20px; font-size:14px; }
   @media (prefers-color-scheme: dark) { .aviso { background:#3a2a10; color:#ffcf8a; border-color:#5c4214; } }
   .topo { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
   #atualizar { font:inherit; font-size:14px; font-weight:600; padding:8px 16px; border-radius:980px; border:0;
-               background:var(--pres); color:#fff; cursor:pointer; }
+               background:var(--pres); color:var(--on); cursor:pointer; }
   #atualizar:disabled { opacity:.6; cursor:default; }
   a#atualizar { text-decoration:none; display:inline-block; }
   .acoes { display:flex; gap:8px; align-items:center; margin:0; }
@@ -486,23 +520,27 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
           background:transparent; color:var(--sub); cursor:pointer; }
   .rodape { color:var(--sub); font-size:12px; margin-top:28px; }
   summary { list-style:none; cursor:pointer; } summary::-webkit-details-marker { display:none; }
-  .ver-cal { float:right; color:var(--pres); } .ver-cal::after { content:' ▾'; } details[open] .ver-cal::after { content:' ▴'; }
+  .ver-cal { display:inline-flex; align-items:center; gap:2px; color:var(--pres); font-weight:500; white-space:nowrap; }
+  .seta { display:block; transition:transform .2s cubic-bezier(.16,1,.3,1); }
+  details[open] .ver-cal .seta { transform:rotate(180deg); }
   .cal { margin-top:12px; padding-top:12px; border-top:1px solid var(--borda); font-size:12px; }
   .mes { max-width:260px; margin:0 auto; }
-  .nav-mes { display:flex; justify-content:center; gap:24px; margin-top:6px; }
-  .nav-mes button { font:inherit; font-size:20px; line-height:1; width:36px; height:30px; border-radius:8px; border:1px solid var(--borda);
+  .nav-mes { display:flex; justify-content:center; gap:24px; margin-top:8px; }
+  .nav-mes button { display:grid; place-items:center; width:36px; height:32px; border-radius:8px; border:1px solid var(--borda);
                     background:transparent; color:var(--txt); cursor:pointer; }
+  .nav-mes button:hover:not(:disabled) { background:var(--trilho); }
+  .nav-mes button:focus-visible, #atualizar:focus-visible, .sair:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
   .nav-mes button:disabled { opacity:.3; cursor:default; }
   .mes-nome { font-weight:600; text-transform:capitalize; margin-bottom:4px; }
   .dias { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; }
   .dias b { color:var(--sub); font-weight:500; font-size:10px; }
   .dias span { border-radius:5px; padding:2px 0; color:var(--sub); }
-  .dias .aula { background:var(--pres); color:#fff; }
+  .dias .aula { background:var(--pres); color:var(--on); }
   .dias .foi { background:var(--trilho); color:var(--txt); }
-  .dias .falta { background:var(--ruim); color:#fff; font-weight:600; }
+  .dias .falta { background:var(--ruim); color:var(--on); font-weight:600; }
   .dias .feriado { background:repeating-linear-gradient(45deg,var(--trilho) 0 3px,transparent 3px 6px); color:var(--txt); text-decoration:line-through; }
   .dias .hoje { position:relative; z-index:1; font-weight:800; color:var(--txt); box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--medio); }
-  .dias .hoje.aula, .dias .hoje.falta { color:#fff; }
+  .dias .hoje.aula, .dias .hoje.falta { color:var(--on); }
   .legenda { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; color:var(--sub); }
   .legenda span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px; }
   .legenda .aula::before { background:var(--pres); } .legenda .foi::before { background:var(--trilho); }
