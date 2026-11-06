@@ -677,10 +677,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   }
   /* Fundo com cor suave e fixa: é o que o vidro refrata */
   .premium body { font-size:16px; letter-spacing:-.01em; min-height:100vh;
-    background:radial-gradient(60vw 50vh at 8% 0%, color-mix(in srgb, var(--pres) 22%, transparent), transparent 70%),
-               radial-gradient(50vw 45vh at 95% 15%, color-mix(in srgb, #bf5af2 16%, transparent), transparent 70%),
-               radial-gradient(70vw 60vh at 50% 110%, color-mix(in srgb, #30d5c8 14%, transparent), transparent 70%), var(--bg);
-    background-attachment:fixed; }
+    background:var(--bg); }
   .premium main { max-width:1180px; padding:14px 22px 104px; }
   /* Material de vidro: translúcido, desfoque forte, brilho na borda de cima, sombra macia deslocada */
   .premium .topo, .premium .card, .premium .versao, .premium .ordem-menu {
@@ -789,6 +786,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .legenda .aula::before { background:color-mix(in srgb, var(--pres) 45%, transparent); }
   .premium .cal-feriados, .premium .cal-dica { text-align:center; font-size:11.5px; margin-top:6px; }
   .premium .modo-toque { margin:14px auto 0; }
+  /* A cor vem dos dados: cada cartão brilha na cor do estado da matéria (verde tranquila, laranja apertada, vermelho no limite) */
+  .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 11%, transparent); --sombra:color-mix(in srgb, var(--nivel) 30%, transparent);
+    background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
+  @media (prefers-color-scheme: dark) { .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 16%, transparent); --sombra:color-mix(in srgb, var(--nivel) 26%, rgb(0 0 0 / .5)); } }
   /* Alternador Original / Premium */
   .versao { touch-action:none; position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
             display:flex; padding:3px; isolation:isolate; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
