@@ -314,16 +314,16 @@ function calendario(m) {
   meses[atual] = meses[atual].replace(' hidden>', '>');
   return `${meses.join('')}
     <div class="nav-mes"><button type="button" aria-label="Mês anterior" onclick="trocarMes(this,-1)"${atual === 0 ? ' disabled' : ''}>${SETA_ESQ}</button><button type="button" aria-label="Próximo mês" onclick="trocarMes(this,1)"${atual === meses.length - 1 ? ' disabled' : ''}>${SETA_DIR}</button></div>
-    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano so-sim">vou faltar</span><span class="vou so-sim">vou com certeza</span></div>
+    <div class="legenda"><span class="aula">aula</span><span class="foi">presença</span><span class="falta">falta</span><span class="feriado">feriado</span><span class="hoje">hoje</span><span class="plano so-sim">falta simulada</span><span class="vou so-sim">presença simulada</span></div>
     <div class="so-sim">
-      <div class="modo-toque" role="group" aria-label="O que o toque marca"><button type="button" data-modo="falta" aria-pressed="true">Vou faltar</button><button type="button" data-modo="vou" aria-pressed="false">Vou com certeza</button></div>
+      <div class="modo-toque" role="group" aria-label="O que o toque marca"><button type="button" data-modo="falta" aria-pressed="true">Simular falta</button><button type="button" data-modo="vou" aria-pressed="false">Simular presença</button></div>
       <div class="cal-dica">${DICA_FALTA}</div>
     </div>
     ${listaFeriados ? '<div class="cal-feriados">Feriados sem aula: ' + listaFeriados + '</div>' : ''}`;
 }
 
 const DICA_FALTA = 'Toque numa aula futura pra simular uma falta.';
-const DICA_VOU = 'Toque numa aula que você vai com certeza (ex.: prova): ela sai da conta das que dá pra faltar.';
+const DICA_VOU = 'Toque numa aula que você vai com certeza (ex.: prova): ela conta como presença e sai das que dá pra faltar.';
 
 // Portal manda nomes em caixa alta; deixa legível sem estragar algarismos romanos
 const MINUSCULAS = new Set(['a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'para', 'com']);
@@ -641,12 +641,22 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .sim { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--ruim); }
   .sim[hidden] { display:none; }
   .limpar-sim { font:inherit; padding:0; border:0; background:none; color:var(--pres); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
-  #so-hoje, #simulador { font:inherit; font-size:13px; font-weight:600; color:var(--txt); background:var(--trilho); border:0; border-radius:980px;
+  #so-hoje { font:inherit; font-size:13px; font-weight:600; color:var(--txt); background:var(--trilho); border:0; border-radius:980px;
              padding:4px 12px; cursor:pointer; align-self:center; transition:background-color .15s, color .15s; }
-  #so-hoje:hover, #simulador:hover { background:color-mix(in srgb, var(--trilho) 86%, var(--txt)); }
-  #so-hoje[aria-pressed=true], #simulador[aria-pressed=true] { background:var(--pres); color:var(--on); }
-  #so-hoje:focus-visible, #simulador:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  #so-hoje:hover { background:color-mix(in srgb, var(--trilho) 86%, var(--txt)); }
+  #so-hoje[aria-pressed=true] { background:var(--pres); color:var(--on); }
+  #so-hoje:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
   .vazio-hoje { color:var(--sub); margin:8px 0 0; }
+  /* Switch do simulador, no estilo do iOS */
+  .switch { display:inline-flex; align-items:center; gap:8px; align-self:center; font-size:13px; font-weight:600; color:var(--txt); cursor:pointer; user-select:none; }
+  #simulador { position:relative; flex:none; width:38px; height:22px; padding:0; border:0; border-radius:980px; background:var(--trilho); cursor:pointer;
+               transition:background-color .2s cubic-bezier(.16,1,.3,1); }
+  #simulador::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff;
+                      box-shadow:0 1px 3px rgb(0 0 0 / .25); transition:transform .2s cubic-bezier(.16,1,.3,1); }
+  #simulador[aria-checked=true] { background:var(--bom); }
+  #simulador[aria-checked=true]::after { transform:translateX(16px); }
+  #simulador:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) { #simulador, #simulador::after { transition:none; } }
   /* Simulador desligado: calendário só mostra, toque não marca nada */
   main:not(.simulando) .so-sim { display:none; }
   main:not(.simulando) .dias button { pointer-events:none; }
@@ -759,7 +769,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   function ligarSimulador(on) {
     try { localStorage.setItem(CHAVE_SIM_ON, on ? '1' : '0'); } catch {}
     document.querySelector('main').classList.toggle('simulando', on);
-    document.getElementById('simulador')?.setAttribute('aria-pressed', on);
+    document.getElementById('simulador')?.setAttribute('aria-checked', on);
     aplicarSim();
   }
   // Desligado: cartões com os números reais; as marcações ficam guardadas pra quando ligar de novo
@@ -788,7 +798,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     c.dataset.nivelAgora = nivel;
     const big = c.querySelector('.big');
     if (big && A0 > 0) {
-      const certas = v ? ' · fora ' + (v === 1 ? '1 certa' : v + ' certas') : '';
+      const certas = v ? ' · fora ' + (v === 1 ? '1 presença' : v + ' presenças') : '';
       const [tit, num, sub] = R < 0
         ? ['Passou do limite', '+' + -R, -R === 1 ? 'falta a mais' : 'faltas a mais']
         : A === 0
@@ -811,7 +821,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const vf = c.querySelector('.stats > div:nth-child(2) .v');
     vf.firstChild.textContent = F;
     c.querySelector('.barra.falt').style.width = (P > 0 ? Math.min(100, (F / P) * 100) : 0).toFixed(1) + '%';
-    const partes = [k && (k === 1 ? '1 falta' : k + ' faltas'), v && (v === 1 ? '1 aula certa' : v + ' aulas certas')].filter(Boolean);
+    const partes = [k && (k === 1 ? '1 falta' : k + ' faltas'), v && (v === 1 ? '1 presença' : v + ' presenças')].filter(Boolean);
     const aviso = c.querySelector('.sim');
     aviso.hidden = !partes.length;
     aviso.querySelector('b').textContent = partes.join(' e ');
@@ -990,7 +1000,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
         </ul>
       </div>
       <button type="button" id="so-hoje" aria-pressed="false" title="Mostrar só as matérias com aula hoje">Hoje</button>
-      <button type="button" id="simulador" aria-pressed="false" title="Simular faltas e aulas que você vai com certeza">Simulador</button>
+      <label class="switch" for="simulador">Simulador<button type="button" id="simulador" role="switch" aria-checked="false" title="Simular faltas e presenças no calendário"></button></label>
     </div>
     ${botao}
   </div>
