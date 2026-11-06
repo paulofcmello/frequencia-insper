@@ -668,7 +668,41 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .modo-toque button { font:inherit; font-size:12px; font-weight:500; padding:4px 10px; border:0; border-radius:7px; background:transparent; color:var(--sub); cursor:pointer; }
   .modo-toque [aria-pressed=true] { background:var(--card); color:var(--txt); font-weight:600; box-shadow:0 1px 3px rgb(0 0 0 / .15); }
   .modo-toque button:focus-visible { outline:2px solid var(--pres); outline-offset:1px; }
+  /* Protótipo "premium": só vale com html.premium; o original fica intacto */
+  html.premium { --bg:#fbfbfd; --borda:rgb(0 0 0 / .06); }
+  @media (prefers-color-scheme: dark) { html.premium { --bg:#000; --card:#161618; --borda:rgb(255 255 255 / .07); } }
+  .premium body { font-size:16px; letter-spacing:-.01em; }
+  .premium main { max-width:1180px; padding:0 22px 96px; }
+  .premium .topo { position:sticky; top:0; z-index:5; margin:0 -22px 28px; padding:18px 22px 16px;
+                   background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:saturate(180%) blur(20px);
+                   -webkit-backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--borda); }
+  .premium h1 { font-size:clamp(30px, 4vw, 44px); font-weight:700; letter-spacing:-.035em; }
+  .premium .grade { gap:22px; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); }
+  .premium .card { border:0; border-radius:24px; padding:24px 24px 16px;
+                   box-shadow:0 0 0 1px var(--borda), 0 2px 4px rgb(0 0 0 / .03), 0 12px 32px -12px rgb(0 0 0 / .10);
+                   transition:transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1); }
+  .premium .card:hover { transform:translateY(-3px);
+                         box-shadow:0 0 0 1px var(--borda), 0 4px 8px rgb(0 0 0 / .04), 0 28px 56px -20px rgb(0 0 0 / .18); }
+  .premium h2 { font-size:19px; font-weight:650; letter-spacing:-.02em; }
+  .premium .hero { margin-top:14px; }
+  .premium .big { font-size:64px; font-weight:700; letter-spacing:-.045em; }
+  .premium .blocos { gap:3px; margin-top:16px; } .premium .blocos i { height:6px; border-radius:980px; }
+  .premium .stats { margin-top:20px; gap:24px; }
+  .premium .k { text-transform:none; font-size:13px; } .premium .v { font-size:24px; font-weight:600; letter-spacing:-.03em; }
+  .premium .trilho { height:5px; border-radius:980px; } .premium .barra { border-radius:980px; }
+  .premium footer { margin-top:18px; padding-top:14px; }
+  @media (prefers-reduced-motion: reduce) { .premium .card:hover { transform:none; } }
+  /* Alternador Original / Premium */
+  .versao { position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
+            display:flex; padding:3px; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
+            backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+            box-shadow:0 0 0 1px var(--borda), 0 10px 30px -10px rgb(0 0 0 / .3); }
+  .versao button { font:inherit; font-size:13px; font-weight:600; padding:7px 16px; border:0; border-radius:980px;
+                   background:transparent; color:var(--sub); cursor:pointer; transition:background-color .2s, color .2s; }
+  .versao [aria-pressed=true] { background:var(--txt); color:var(--bg); }
+  .versao button:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
 </style>
+<script>try { if (localStorage.versao === 'premium') document.documentElement.classList.add('premium'); } catch {}</script>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
 <script>
@@ -1010,6 +1044,21 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   <p class="vazio-hoje" hidden>Sem aulas hoje.</p>
   ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
 </main>
+<div class="versao" role="group" aria-label="Versão do visual">
+  <button type="button" data-v="original">Original</button><button type="button" data-v="premium">Premium</button>
+</div>
+<script>
+  (() => {
+    const bs = document.querySelectorAll('.versao button');
+    const marcar = () => bs.forEach((b) => b.setAttribute('aria-pressed', document.documentElement.classList.contains('premium') === (b.dataset.v === 'premium')));
+    bs.forEach((b) => b.onclick = () => {
+      document.documentElement.classList.toggle('premium', b.dataset.v === 'premium');
+      try { localStorage.versao = b.dataset.v; } catch {}
+      marcar();
+    });
+    marcar();
+  })();
+</script>
 </body>
 </html>
 `;
