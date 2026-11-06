@@ -692,13 +692,34 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium h1 { font-size:22px; font-weight:700; letter-spacing:-.025em; }
   .premium .sub { font-size:13px; }
   .premium .ordem { font-size:13px; }
-  .premium #ordem, .premium #so-hoje { background:rgb(255 255 255 / .45); box-shadow:inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05); }
-  @media (prefers-color-scheme: dark) { .premium #ordem, .premium #so-hoje { background:rgb(255 255 255 / .08); } }
-  .premium #so-hoje[aria-pressed=true] { background:var(--pres); }
-  .premium #atualizar { padding:9px 20px; box-shadow:inset 0 1px 0 rgb(255 255 255 / .35), 0 6px 16px -6px color-mix(in srgb, var(--pres) 70%, transparent); }
+  /* Mola do Liquid Glass: passa um pouco do ponto e assenta */
+  html { --mola:linear(0, .08 3%, .3 8%, .62 14%, .88 21%, 1.04 28%, 1.09 34%, 1.08 40%, 1.03 50%, .995 62%, .992 72%, 1); }
+  /* Controles da barra: vidro por dentro do vidro (sem desfoque próprio), crescem e acendem onde o dedo toca */
+  .premium #ordem, .premium #so-hoje, .premium #atualizar {
+    --luz:rgb(255 255 255 / 0); position:relative;
+    background:radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), var(--luz), transparent 70%),
+               linear-gradient(180deg, rgb(255 255 255 / .82), rgb(255 255 255 / .42));
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .95), inset 0 -1px 0 rgb(255 255 255 / .35), inset 0 0 0 1px var(--borda),
+               0 1px 2px rgb(0 0 0 / .05), 0 6px 14px -6px var(--sombra);
+    transition:transform .5s var(--mola), box-shadow .3s, --luz .4s; }
+  @media (prefers-color-scheme: dark) { .premium #ordem, .premium #so-hoje {
+    background:radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), var(--luz), transparent 70%),
+               linear-gradient(180deg, rgb(255 255 255 / .16), rgb(255 255 255 / .05));
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 6px 14px -6px var(--sombra); } }
+  .premium #so-hoje[aria-pressed=true], .premium #atualizar {
+    background:radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), var(--luz), transparent 70%),
+               linear-gradient(180deg, rgb(255 255 255 / .28), rgb(255 255 255 / 0) 60%), var(--pres);
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .45), inset 0 0 0 1px rgb(0 0 0 / .06), 0 8px 18px -8px color-mix(in srgb, var(--pres) 80%, transparent); }
+  .premium #ordem:active, .premium #so-hoje:active, .premium #atualizar:active, .premium #ordem[aria-expanded=true] { transform:scale(1.08); --luz:rgb(255 255 255 / .7); }
+  @property --luz { syntax:'<color>'; inherits:false; initial-value:transparent; }
+  /* Switch do iOS 26: ao apertar, a bolinha vira uma lente de vidro larga e desliza com mola */
+  .premium #simulador::after { transition:transform .5s var(--mola), width .35s var(--mola), left .5s var(--mola), background-color .25s, box-shadow .25s; }
+  .premium #simulador:active::after { width:28px; background:rgb(255 255 255 / .5); transform:scale(1.15);
+    box-shadow:inset 0 1px 0 #fff, inset 0 0 0 1px rgb(255 255 255 / .6), 0 4px 12px rgb(0 0 0 / .22); }
+  .premium #simulador[aria-checked=true]:active::after { transform:translateX(6px) scale(1.15); }
+  .premium #atualizar { padding:9px 20px; }
   .premium .sair { border:0; background:transparent; }
   .premium .sair:hover { color:var(--txt); }
-  .premium #atualizar:active, .premium .versao button:active { transform:scale(.96); }
   .premium .ordem-menu { border-radius:18px; background:color-mix(in srgb, var(--bg) 90%, transparent); } /* vidro dentro de vidro some no Safari */
   .premium .grade { gap:20px; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); }
   .premium .card { border:0; border-radius:26px; padding:18px 22px 12px;
@@ -727,13 +748,19 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .versao { backdrop-filter:none; } }
   /* Alternador Original / Premium */
   .versao { position:fixed; bottom:max(18px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:20;
-            display:flex; padding:3px; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
+            display:flex; padding:3px; isolation:isolate; border-radius:980px; background:color-mix(in srgb, var(--card) 72%, transparent);
             backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
             box-shadow:0 0 0 1px var(--borda), 0 10px 30px -10px rgb(0 0 0 / .3); }
   .premium .versao { background:var(--vidro); }
   .versao button { font:inherit; font-size:13px; font-weight:600; padding:7px 16px; border:0; border-radius:980px;
                    background:transparent; color:var(--sub); cursor:pointer; transition:background-color .2s, color .2s, transform .2s; }
-  .versao [aria-pressed=true] { background:var(--txt); color:var(--bg); }
+  .versao [aria-pressed=true] { color:var(--bg); }
+  .versao .pilula { position:absolute; top:3px; bottom:3px; left:3px; z-index:-1; border-radius:980px; background:var(--txt);
+                    transition:transform .5s var(--mola), background-color .25s, box-shadow .25s; }
+  .versao.apertando .pilula { transform:scale(1.14); background:color-mix(in srgb, var(--txt) 30%, transparent);
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .7), inset 0 0 0 1px rgb(255 255 255 / .4), 0 8px 20px -6px rgb(0 0 0 / .35); }
+  .versao.apertando [aria-pressed=true] { color:var(--txt); }
+  @media (prefers-reduced-motion: reduce) { .versao .pilula, .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
   .versao button:focus-visible { outline:2px solid var(--pres); outline-offset:2px; }
 </style>
 <script>try { if (localStorage.versao === 'premium') document.documentElement.classList.add('premium'); } catch {}</script>
@@ -1081,19 +1108,41 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
 </main>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lente" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='x'%3E%3Cstop offset='0' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient id='y' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%230f0'/%3E%3C/linearGradient%3E%3Cfilter id='b'%3E%3CfeGaussianBlur stdDeviation='3'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23x)'/%3E%3Crect width='100' height='100' fill='url(%23y)' style='mix-blend-mode:screen'/%3E%3Crect x='5' y='20' width='90' height='60' rx='8' fill='rgb(128,128,0)' filter='url(%23b)'/%3E%3C/svg%3E" preserveAspectRatio="none" result="mapa"/><feDisplacementMap in="SourceGraphic" in2="mapa" scale="40" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
 <script>if (navigator.userAgentData) document.documentElement.classList.add('lente'); // backdrop-filter com url() só funciona no Chromium</script>
-<div class="versao" role="group" aria-label="Versão do visual">
+<div class="versao" role="group" aria-label="Versão do visual"><span class="pilula" aria-hidden="true"></span>
   <button type="button" data-v="original">Original</button><button type="button" data-v="premium">Premium</button>
 </div>
 <script>
   (() => {
-    const bs = document.querySelectorAll('.versao button');
-    const marcar = () => bs.forEach((b) => b.setAttribute('aria-pressed', document.documentElement.classList.contains('premium') === (b.dataset.v === 'premium')));
+    const caixa = document.querySelector('.versao'), pilula = caixa.querySelector('.pilula'), bs = caixa.querySelectorAll('button');
+    const calma = matchMedia('(prefers-reduced-motion: reduce)');
+    const marcar = (animar) => {
+      const de = { left: pilula.offsetLeft, width: pilula.offsetWidth };
+      let alvo;
+      bs.forEach((b) => { const sim = document.documentElement.classList.contains('premium') === (b.dataset.v === 'premium'); b.setAttribute('aria-pressed', sim); if (sim) alvo = b; });
+      const para = { left: alvo.offsetLeft, width: alvo.offsetWidth };
+      Object.assign(pilula.style, { left: para.left + 'px', width: para.width + 'px' });
+      if (!animar || calma.matches || !de.width) return;
+      // Estica como gel cobrindo as duas opções no meio do caminho, depois assenta com mola
+      const meio = { left: Math.min(de.left, para.left) + 4, width: Math.abs(para.left - de.left) + Math.min(de.width, para.width) - 8 };
+      pilula.animate([{ left: de.left + 'px', width: de.width + 'px' }, { left: meio.left + 'px', width: meio.width + 'px', offset: .4 },
+                      { left: para.left + 'px', width: para.width + 'px' }], { duration: 520, easing: 'cubic-bezier(.3,1.25,.5,1)' });
+    };
+    caixa.addEventListener('pointerdown', () => caixa.classList.add('apertando'));
+    const soltar = () => setTimeout(() => caixa.classList.remove('apertando'), 220); // segura um pouco pra lente aparecer num toque rápido
+    caixa.addEventListener('pointerup', soltar); caixa.addEventListener('pointercancel', soltar); caixa.addEventListener('pointerleave', soltar);
     bs.forEach((b) => b.onclick = () => {
       document.documentElement.classList.toggle('premium', b.dataset.v === 'premium');
       try { localStorage.versao = b.dataset.v; } catch {}
-      marcar();
+      marcar(true);
     });
-    marcar();
+    marcar(false);
+    // Luz do toque: o botão acende a partir do ponto onde o dedo encostou
+    document.addEventListener('pointerdown', (e) => {
+      const b = e.target.closest?.('#ordem, #so-hoje, #atualizar');
+      if (!b) return;
+      const r = b.getBoundingClientRect();
+      b.style.setProperty('--gx', (e.clientX - r.left) + 'px'); b.style.setProperty('--gy', (e.clientY - r.top) + 'px');
+    });
   })();
 </script>
 </body>
