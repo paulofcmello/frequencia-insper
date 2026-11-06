@@ -485,8 +485,9 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
          font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
   main { max-width:1100px; margin:0 auto; padding:24px 16px 40px; }
-  h1 { font-size:30px; line-height:1.1; letter-spacing:-.025em; margin:0 0 4px; }
-  .sub { color:var(--sub); margin:0 0 16px; font-size:14px; text-wrap:pretty; }
+  h1 { font-size:28px; line-height:1.1; letter-spacing:-.025em; margin:0; }
+  .sub { color:var(--sub); margin:0; font-size:14px; text-wrap:pretty; }
+  .titulo { display:flex; align-items:baseline; gap:2px 14px; flex-wrap:wrap; }
   .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; align-items:start; }
   .card { --nivel:var(--bom); background:var(--card); border:1px solid var(--borda); border-radius:16px; padding:16px 18px 12px;
           transition:box-shadow .2s cubic-bezier(.16,1,.3,1); }
@@ -516,7 +517,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .prox { color:var(--txt); margin-bottom:2px; } .prox b { font-weight:600; }
   .aviso { background:#fff4e5; color:#8a4b00; border:1px solid #ffd8a8; padding:10px 14px; border-radius:10px; margin-bottom:20px; font-size:14px; }
   @media (prefers-color-scheme: dark) { .aviso { background:#3a2a10; color:#ffcf8a; border-color:#5c4214; } }
-  .topo { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+  .topo { display:flex; justify-content:space-between; align-items:center; gap:12px 16px; flex-wrap:wrap; margin-bottom:16px; }
   #atualizar { font:inherit; font-size:14px; font-weight:600; padding:8px 16px; border-radius:980px; border:0;
                background:var(--pres); color:var(--on); cursor:pointer; }
   #atualizar:disabled { opacity:.6; cursor:default; }
@@ -573,6 +574,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     if (!r.ok || !novo.querySelector('.grade')) return location.reload(); // ex.: sessão expirou e veio a tela de login
     const main = document.querySelector('main');
     main.replaceChildren(main.querySelector('.topo'), ...[...novo.querySelector('main').children].filter((e) => !e.matches('.topo')));
+    main.querySelector('.sub').replaceWith(novo.querySelector('.sub')); // horário de atualização fica no .topo
     document.body.dataset.atualizado = novo.body.dataset.atualizado;
   }
   // Site multiusuário: o link "Atualizar" busca os dados sem sair da página
@@ -607,10 +609,12 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
 </script>
 <main>
   <div class="topo">
-    <h1>Frequência</h1>
+    <div class="titulo">
+      <h1>Frequência</h1>
+      <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)} · ordenado por quanto ainda dá pra faltar</p>
+    </div>
     ${botao}
   </div>
-  <p class="sub">Atualizado ${esc(dataBR(atualizadoEm, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}${esc(quandoProxima)} · ordenado por quanto ainda dá pra faltar</p>
   ${aviso}
   <section class="grade">${materias.map(cartao).join('')}</section>
   ${modo === 'web' ? '<p class="rodape">Projeto pessoal, não oficial do Insper. Os dados vêm do Aluno Online com o seu login.</p>' : ''}
