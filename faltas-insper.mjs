@@ -720,7 +720,9 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
                                          top .45s var(--mola), background-color .25s, box-shadow .25s; }
   /* Enquanto o dedo segura: a bolinha vira uma lente de vidro maior que o trilho, e só volta ao soltar */
   #simulador { touch-action:none; }
-  #simulador.arrastando::after { transform:translateX(var(--kx)) !important; transition-property:width, height, left, top, background-color, box-shadow; }
+  #simulador.arrastando::after { transform:translateX(var(--kx)) !important; width:calc(18px + var(--kw, 0px));
+                                 transition-property:height, left, top, background-color, box-shadow; }
+  .premium #simulador.arrastando.apertado::after { width:calc(42px + var(--kw, 0px)); }
   .premium #simulador.apertado::after { top:-5px; left:-10px; width:42px; height:32px; background:rgb(255 255 255 / .1); box-shadow:var(--arco); }
   .premium #atualizar { padding:9px 20px; }
   .premium .sair { border:0; background:transparent; }
@@ -1119,6 +1121,9 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   (() => {
     const caixa = document.querySelector('.versao'), pilula = caixa.querySelector('.pilula'), bs = caixa.querySelectorAll('button');
     const calma = matchMedia('(prefers-reduced-motion: reduce)');
+    // Elástico do iOS: quanto mais passa, menos anda (nunca mais que d)
+    const elastico = (x, d = 36) => (1 - 1 / (x * .55 / d + 1)) * d;
+    const MOLA = 'linear(0, .08 3%, .3 8%, .62 14%, .88 21%, 1.04 28%, 1.09 34%, 1.08 40%, 1.03 50%, .995 62%, .992 72%, 1)';
     const marcar = (animar) => {
       const de = { left: pilula.offsetLeft, width: pilula.offsetWidth };
       let alvo;
@@ -1128,8 +1133,9 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       if (!animar || calma.matches || !de.width) return;
       // Estica como gel cobrindo as duas opções no meio do caminho, depois assenta com mola
       const meio = { left: Math.min(de.left, para.left) + 4, width: Math.abs(para.left - de.left) + Math.min(de.width, para.width) - 8 };
-      pilula.animate([{ left: de.left + 'px', width: de.width + 'px' }, { left: meio.left + 'px', width: meio.width + 'px', offset: .4 },
-                      { left: para.left + 'px', width: para.width + 'px' }], { duration: 520, easing: 'cubic-bezier(.3,1.25,.5,1)' });
+      const quadros = [{ left: de.left + 'px', width: de.width + 'px' }, { left: para.left + 'px', width: para.width + 'px' }];
+      if (Math.abs(para.left - de.left) > 12) quadros.splice(1, 0, { left: meio.left + 'px', width: meio.width + 'px', offset: .35 });
+      pilula.animate(quadros, { duration: 650, easing: MOLA });
     };
         // A lente fica enquanto o dedo segura e some ao soltar (um mínimo de 180 ms pra aparecer num toque rápido)
     let desde = 0;
@@ -1144,19 +1150,23 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       segurar(sim, 'apertado');
       // Arrastar a bolinha do switch; ao soltar, liga se passou da metade
       let a = null, ignorar = false;
-      sim.addEventListener('pointerdown', (e) => { a = { x: e.clientX, base: sim.getAttribute('aria-checked') === 'true' ? 16 : 0, moveu: false }; sim.setPointerCapture(e.pointerId); });
+      sim.addEventListener('pointerdown', (e) => { a = { x: e.clientX, base: sim.getAttribute('aria-checked') === 'true' ? 16 : 0, moveu: false, v: 0, ux: e.clientX, ut: e.timeStamp }; sim.setPointerCapture(e.pointerId); });
       sim.addEventListener('pointermove', (e) => {
         if (!a) return;
         const dx = e.clientX - a.x;
         if (Math.abs(dx) > 3) { a.moveu = true; sim.classList.add('arrastando'); }
-        if (a.moveu) sim.style.setProperty('--kx', Math.min(16, Math.max(0, a.base + dx)) + 'px');
+        if (!a.moveu) return;
+        a.v = (e.clientX - a.ux) / Math.max(1, e.timeStamp - a.ut); a.ux = e.clientX; a.ut = e.timeStamp;
+        const x = a.base + dx, sobra = x > 16 ? elastico(x - 16, 14) : x < 0 ? elastico(-x, 14) : 0;
+        sim.style.setProperty('--kx', (x > 16 ? 16 : x < 0 ? -sobra : x) + 'px');
+        sim.style.setProperty('--kw', sobra + 'px');
       });
       const fim = (valer) => {
         if (!a) return;
-        const { moveu } = a; a = null;
+        const { moveu, v: a_v } = a; a = null;
         if (!moveu) return;
-        const kx = parseFloat(sim.style.getPropertyValue('--kx'));
-        sim.classList.remove('arrastando'); sim.style.removeProperty('--kx');
+        const kx = parseFloat(sim.style.getPropertyValue('--kx')) + a_v * 100; // inércia
+        sim.classList.remove('arrastando'); sim.style.removeProperty('--kx'); sim.style.removeProperty('--kw');
         ignorar = true; setTimeout(() => ignorar = false, 300); // o clique que vem depois do arrasto não alterna de novo
         if (valer && (kx > 8) !== (sim.getAttribute('aria-checked') === 'true')) ligarSimulador(kx > 8);
       };
@@ -1173,7 +1183,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     bs.forEach((b) => b.onclick = (e) => { if (e.detail === 0) escolher(b.dataset.v); }); // teclado; o toque é tratado no largar
     // Arrastar a pílula de uma opção pra outra; ao soltar, fica na opção mais perto do centro dela
     caixa.addEventListener('pointerdown', (e) => {
-      arrasto = { x: e.clientX, left: pilula.offsetLeft, moveu: false, botao: e.target.closest('button') };
+      arrasto = { x: e.clientX, left: pilula.offsetLeft, w: pilula.offsetWidth, moveu: false, botao: e.target.closest('button'), v: 0, ux: e.clientX, ut: e.timeStamp };
       caixa.setPointerCapture(e.pointerId);
     });
     caixa.addEventListener('pointermove', (e) => {
@@ -1181,14 +1191,18 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       const dx = e.clientX - arrasto.x;
       if (Math.abs(dx) > 3) arrasto.moveu = true;
       if (!arrasto.moveu) return;
-      const max = caixa.clientWidth - pilula.offsetWidth - 3;
-      pilula.style.left = Math.min(max, Math.max(3, arrasto.left + dx)) + 'px';
+      arrasto.v = (e.clientX - arrasto.ux) / Math.max(1, e.timeStamp - arrasto.ut); arrasto.ux = e.clientX; arrasto.ut = e.timeStamp;
+      // Passou da ponta: continua um pouco esticando, cada vez mais devagar, como líquido
+      const max = caixa.clientWidth - arrasto.w - 3, x = arrasto.left + dx;
+      const sobra = x > max ? elastico(x - max) : x < 3 ? elastico(3 - x) : 0;
+      pilula.style.left = (x > max ? max : x < 3 ? 3 - sobra : x) + 'px';
+      pilula.style.width = arrasto.w + sobra + 'px';
     });
     const largar = () => {
       if (!arrasto) return;
-      const { moveu, botao } = arrasto; arrasto = null;
+      const { moveu, botao, v: arrasto_v } = arrasto; arrasto = null;
       if (!moveu) return botao && escolher(botao.dataset.v); // toque simples (com captura do ponteiro, o clique não chega no botão)
-      const centro = pilula.offsetLeft + pilula.offsetWidth / 2;
+      const centro = pilula.offsetLeft + pilula.offsetWidth / 2 + arrasto_v * 120; // inércia: um gesto rápido escolhe pra onde ia
       const perto = [...bs].sort((p, q) => Math.abs(p.offsetLeft + p.offsetWidth / 2 - centro) - Math.abs(q.offsetLeft + q.offsetWidth / 2 - centro))[0];
       escolher(perto.dataset.v);
     };
