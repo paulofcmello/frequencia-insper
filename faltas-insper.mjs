@@ -373,7 +373,10 @@ function cartao(m, i) {
       <button type="button" class="alca" aria-label="Mover ${esc(nomeBonito(m.nome))} (arraste ou use as setas)">${ALCA}</button>
     </div>
     <div class="hero">
-      <b class="hero-titulo">${heroTitulo}</b>
+      <div class="hero-topo">
+        <b class="hero-titulo">${heroTitulo}</b>
+        ${faltamPresencas === 0 ? `<span class="garantida" title="Já tem presenças suficientes: mesmo faltando todas as aulas restantes, passa por frequência">${CHECK}Presença garantida</span>` : ''}
+      </div>
       <div class="hero-linha">${heroNum !== '' ? `<span class="big">${heroNum}</span>` : ''}<span class="hero-sub">${heroSub}</span></div>
     </div>
     ${blocos ? `<div class="blocos" role="img" aria-label="${podeFaltar} de ${m.aulasRestantes} aulas restantes ainda podem ser faltadas">${blocos}</div>` : ''}
@@ -533,6 +536,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .ordem-menu [aria-selected=true] b { color:var(--pres); font-weight:600; }
   .ordem-menu [aria-selected=true] .check { visibility:visible; }
   .cab { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .hero-topo { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .garantida { display:inline-flex; align-items:center; gap:4px; flex:none; padding:2px 9px 2px 7px; border-radius:980px; white-space:nowrap;
+               font-size:12px; font-weight:600; color:var(--bom); background:color-mix(in srgb, var(--bom) 14%, transparent); }
+  .garantida .check { visibility:visible; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
           background:transparent; color:var(--sub); cursor:grab; touch-action:none; }
   main.personalizada .alca { display:grid; }
