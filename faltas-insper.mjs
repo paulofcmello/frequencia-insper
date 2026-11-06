@@ -386,7 +386,7 @@ const scriptBotaoLocal = `
         const r = await fetch('/atualizar', { method: 'POST' });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) alert(j.erro || 'Não consegui atualizar.');
-      } finally { location.reload(); }
+      } finally { await recarregar().catch(() => location.reload()); b.disabled = false; b.textContent = 'Atualizar agora'; }
     };`;
 
 // Botão do GitHub Pages: dispara o workflow pela API usando um token guardado só neste navegador,
@@ -398,7 +398,6 @@ const scriptBotaoGithub = (repo) => `
       headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + localStorage.getItem(CHAVE), ...(opcoes.headers || {}) },
     });
     const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
-    const atualizadoAntes = document.body.dataset.atualizado;
     b.onclick = async () => {
       if (!localStorage.getItem(CHAVE)) {
         const t = prompt('Cole o token do GitHub (só precisa uma vez neste navegador):');
@@ -406,6 +405,7 @@ const scriptBotaoGithub = (repo) => `
         localStorage.setItem(CHAVE, t.trim());
       }
       b.disabled = true; b.textContent = 'Pedindo atualização…';
+      const atualizadoAntes = document.body.dataset.atualizado;
       const inicio = new Date(Date.now() - 60 * 1000).toISOString();
       try {
         const r = await api('/actions/workflows/' + WORKFLOW + '/dispatches', {
@@ -427,7 +427,12 @@ const scriptBotaoGithub = (repo) => `
           if (execucao.conclusion !== 'success') throw new Error('A atualização falhou no GitHub (' + execucao.conclusion + ').');
           b.textContent = 'Publicando…';
           const d = await (await fetch('dados.json?t=' + Date.now(), { cache: 'no-store' })).json().catch(() => ({}));
-          if (String(d.atualizadoEm) !== atualizadoAntes) return location.reload();
+          if (String(d.atualizadoEm) !== atualizadoAntes) {
+            // ?t= fura o cache do GitHub Pages, que ainda pode ter a página velha
+            await recarregar(location.pathname + '?t=' + Date.now());
+            b.disabled = false; b.textContent = 'Atualizar agora';
+            return;
+          }
         }
         throw new Error('Demorou demais. Tente recarregar a página daqui a pouco.');
       } catch (e) {
@@ -456,8 +461,8 @@ function pagina({ materias, atualizadoEm, erro, fimAulas }, { modo = 'arquivo', 
   <script>
     const b = document.getElementById('atualizar');
     ${modo === 'github' ? scriptBotaoGithub(repo) : scriptBotaoLocal}
-    // Recarrega a página a cada 5 min pra mostrar atualizações automáticas
-    setTimeout(() => { if (!b.disabled) location.reload(); }, 5 * 60 * 1000);
+    // Busca a página de novo a cada 5 min pra mostrar atualizações automáticas
+    setInterval(() => { if (!b.disabled) recarregar().catch(() => {}); }, 5 * 60 * 1000);
   </script>`
     : '';
   return `<!doctype html>
@@ -515,6 +520,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
                background:var(--pres); color:var(--on); cursor:pointer; }
   #atualizar:disabled { opacity:.6; cursor:default; }
   a#atualizar { text-decoration:none; display:inline-block; }
+  a#atualizar[aria-busy] { opacity:.6; cursor:default; }
   .acoes { display:flex; gap:8px; align-items:center; margin:0; }
   .sair { font:inherit; font-size:14px; padding:8px 14px; border-radius:980px; border:1px solid var(--borda);
           background:transparent; color:var(--sub); cursor:pointer; }
@@ -559,6 +565,44 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const [ant, prox] = cal.querySelectorAll('.nav-mes button');
     ant.disabled = j === 0; prox.disabled = j === meses.length - 1;
   }
+  // Troca os cartões pelos da página nova sem recarregar (o .topo com o botão fica)
+  async function recarregar(url = location.href) {
+    const r = await fetch(url, { cache: 'no-store' });
+    const novo = new DOMParser().parseFromString(await r.text(), 'text/html');
+    if (!r.ok || !novo.querySelector('.grade')) return location.reload(); // ex.: sessão expirou e veio a tela de login
+    const main = document.querySelector('main');
+    main.replaceChildren(main.querySelector('.topo'), ...[...novo.querySelector('main').children].filter((e) => !e.matches('.topo')));
+    document.body.dataset.atualizado = novo.body.dataset.atualizado;
+  }
+  // Site multiusuário: o link "Atualizar" busca os dados sem sair da página
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest('a#atualizar');
+    if (!a || a.getAttribute('aria-busy')) return;
+    e.preventDefault();
+    a.setAttribute('aria-busy', 'true'); a.textContent = 'Atualizando…';
+    try { await recarregar(a.href); } catch { location.href = a.href; return; }
+    a.removeAttribute('aria-busy'); a.textContent = 'Atualizar';
+  });
+  // Abre e fecha o calendário deslizando (o <details> sozinho só pula)
+  document.addEventListener('click', (e) => {
+    const s = e.target.closest('.card > summary');
+    if (!s || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    e.preventDefault();
+    const d = s.parentElement, cal = d.querySelector('.cal');
+    const abrindo = !d.open || d.dataset.fechando === '1'; // clique no meio do fechamento reabre
+    const agora = getComputedStyle(cal); // parte de onde a animação anterior parou
+    const atual = { height: agora.height, paddingTop: agora.paddingTop, marginTop: agora.marginTop, opacity: agora.opacity };
+    const veioDoMeio = cal.getAnimations().length > 0;
+    cal.getAnimations().forEach((a) => a.cancel());
+    d.open = true;
+    d.dataset.fechando = abrindo ? '' : '1';
+    const fechado = { height: '0px', paddingTop: '0px', marginTop: '0px', opacity: 0 };
+    const aberto = { height: cal.offsetHeight + 'px', paddingTop: '12px', marginTop: '12px', opacity: 1 };
+    cal.style.overflow = 'hidden';
+    const a = cal.animate([veioDoMeio ? atual : abrindo ? fechado : aberto, abrindo ? aberto : fechado],
+      abrindo ? { duration: 280, easing: 'cubic-bezier(.16,1,.3,1)' } : { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)' });
+    a.onfinish = () => { cal.style.overflow = ''; if (!abrindo) { d.open = false; d.dataset.fechando = ''; } };
+  });
 </script>
 <main>
   <div class="topo">
