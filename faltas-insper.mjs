@@ -826,8 +826,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
   @media (prefers-color-scheme: dark) { .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 16%, transparent); --sombra:color-mix(in srgb, var(--nivel) 26%, rgb(0 0 0 / .5)); } }
   /* Presença garantida (dado real, a simulação não mexe): só o aro e o brilho ficam verdes */
-  .premium .grade > .card.garantido { --sombra:color-mix(in srgb, var(--bom) 70%, transparent);
-    outline:2.5px solid var(--bom); outline-offset:-2.5px; }
+  .premium .grade > .card.garantido { --sombra:color-mix(in srgb, var(--bom) 45%, transparent);
+    outline:2px solid color-mix(in srgb, var(--bom) 55%, transparent); outline-offset:-2px; }
   @media (prefers-reduced-motion: reduce) { .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
 </style>
 </head>
