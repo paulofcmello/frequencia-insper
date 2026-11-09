@@ -544,8 +544,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .cab { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .hero-topo { display:flex; justify-content:space-between; align-items:center; gap:8px; }
   .garantida { display:inline-flex; align-items:center; gap:4px; flex:none; padding:2px 9px 2px 7px; border-radius:980px; white-space:nowrap;
-               font-size:12px; font-weight:600; color:var(--on); background:color-mix(in srgb, var(--pres) 78%, transparent);
-               backdrop-filter:blur(8px) saturate(160%); -webkit-backdrop-filter:blur(8px) saturate(160%); box-shadow:inset 0 0 0 1px rgb(255 255 255 / .28), inset 0 1px 0 rgb(255 255 255 / .35); }
+               font-size:12px; font-weight:600; color:var(--on); background:var(--bom);
+               position:relative; overflow:hidden; animation:surgir .7s cubic-bezier(.34,1.56,.64,1) .45s backwards; }
+  .garantida::after { content:''; position:absolute; inset:0; transform:translateX(-130%); pointer-events:none;
+                      background:linear-gradient(100deg, transparent 30%, rgb(255 255 255 / .55) 50%, transparent 70%); animation:brilho 1.1s ease-out 1.05s 1 both; }
   .garantida .check { visibility:visible; }
   .garantida[hidden] { display:none; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
@@ -580,12 +582,14 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   /* Ao abrir: barras crescem e os blocos livres se acendem um a um, cartão por cartão */
   @keyframes crescer { from { transform:scaleX(0); } }
   @keyframes acender { from { background:var(--trilho); transform:scaleY(.5); } }
+  @keyframes surgir { from { opacity:0; transform:scale(.55); } }
+  @keyframes brilho { to { transform:translateX(130%); } }
   @keyframes pulsar { from { box-shadow:0 0 0 0 color-mix(in srgb, var(--nivel) 50%, transparent); } to { box-shadow:0 0 0 12px transparent; } }
   .barra { transform-origin:left; animation:crescer .8s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--c, 0) * 70ms + 80ms); }
   .blocos i.livre { animation:acender .4s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--c, 0) * 70ms + var(--n, 0) * 50ms + 150ms); }
-  .card.sem-anim .barra, .card.sem-anim .blocos i { animation:none; } /* não mudou na atualização: fica quieto */
+  .card.sem-anim .barra, .card.sem-anim .blocos i, .card.sem-anim .garantida, .card.sem-anim .garantida::after { animation:none; } /* não mudou na atualização: fica quieto */
   .card.mudou { animation:pulsar 1.1s cubic-bezier(.16,1,.3,1) .25s 2; }
-  @media (prefers-reduced-motion: reduce) { .barra, .blocos i, .card.mudou { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .barra, .blocos i, .card.mudou, .garantida, .garantida::after { animation:none !important; } }
   .barra.pres { background:var(--pres); }
   /* Falta nunca é verde: laranja normal, vermelho quando a matéria está apertada */
   .barra.falt { background:var(--medio); } .card.ruim .barra.falt { background:var(--ruim); }
