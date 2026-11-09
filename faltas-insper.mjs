@@ -1494,7 +1494,7 @@ async function main() {
 }
 
 // Usado pelo site multiusuário (api/index.mjs)
-export { Sessao, buscarFrequencia, pagina, esc };
+export { Sessao, buscarFrequencia, pagina, esc, folga };
 
 // Só roda a linha de comando quando o arquivo é executado direto, não quando é importado
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

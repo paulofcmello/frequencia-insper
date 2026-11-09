@@ -7,7 +7,7 @@
 // variável de ambiente SEGREDO, que só existe no servidor.
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import { Sessao, buscarFrequencia, pagina, esc } from '../faltas-insper.mjs';
+import { Sessao, buscarFrequencia, pagina, esc, folga } from '../faltas-insper.mjs';
 
 const DIA = 24 * 60 * 60;
 const VALIDADE_SESSAO = 12 * 60 * 60;
@@ -102,6 +102,7 @@ function telaLogin(erro = '') {
   button:disabled { opacity:.6; }
   .erro { color:var(--erro); font-size:14px; margin:12px 0 0; }
   .aviso { color:var(--sub); font-size:12px; margin:18px 0 0; }
+  .demo { display:block; text-align:center; margin-top:14px; font-size:14px; color:var(--azul); }
 </style>
 </head>
 <body>
@@ -117,6 +118,7 @@ function telaLogin(erro = '') {
   </label>
   ${erro ? '<p class="erro">' + esc(erro) + '</p>' : ''}
   <button type="submit">Entrar</button>
+  <a class="demo" href="/demo">Não estuda no Insper? Ver um exemplo</a>
   <p class="aviso">Projeto pessoal, não oficial do Insper. A senha é usada só pra entrar no Aluno Online e não fica guardada no servidor.</p>
 </form>
 </body>
@@ -145,6 +147,45 @@ async function mostrarPainel(res, s, aluno, cookies) {
   responder(res, 200, pagina({ materias, fimAulas, atualizadoEm: Date.now() }, { modo: 'web' }), cookies);
 }
 
+// Matérias inventadas pra quem não estuda no Insper ver como fica.
+// shortcut: semestre fixo 2026-2 (03/08 a 25/11); depois dele tudo aparece como já dado, atualizar as datas se quiser de novo.
+function dadosDeExemplo() {
+  const agora = Date.now();
+  const feriados = { '2026-09-07': 'Independência', '2026-10-12': 'Nossa Senhora Aparecida', '2026-11-02': 'Finados', '2026-11-20': 'Consciência Negra' };
+  const exemplos = [
+    // nome, dias da semana, horário, limite de faltas, faltas
+    ['Cálculo Multivariado', [1, 3], '07:30', 14, 11],
+    ['Física II', [2, 4], '09:45', 10, 8],
+    ['Programação Orientada a Objetos', [1, 3], '13:30', 10, 2],
+    ['Estatística', [2, 4], '13:30', 10, 5],
+    ['Design de Software', [3, 5], '09:45', 10, 0],
+  ];
+  const fimAulas = [];
+  const materias = exemplos.map(([nome, semana, hora, permitidas, nFaltas]) => {
+    const diasAula = [];
+    for (let d = new Date('2026-08-03T12:00:00Z'); d <= new Date('2026-11-25T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1)) {
+      const dia = d.toISOString().slice(0, 10);
+      if (semana.includes(d.getUTCDay()) && !feriados[dia]) diasAula.push(dia + 'T' + hora);
+    }
+    const inicios = diasAula.map((d) => Date.parse(d + ':00-03:00'));
+    fimAulas.push(...inicios.map((t) => t + 2 * 3600000));
+    const passadas = diasAula.filter((_, i) => inicios[i] + 2 * 3600000 <= agora);
+    const faltas = Math.min(nFaltas, passadas.length);
+    // Espalha as faltas pelas aulas que já passaram, no formato do portal (DD/MM/AAAA)
+    const datas = Array.from({ length: faltas }, (_, k) => passadas[Math.floor(((k + 0.5) * passadas.length) / faltas)])
+      .map((d) => d.slice(0, 10).split('-').reverse().join('/'));
+    const total = diasAula.length, dadas = passadas.length;
+    return {
+      nome, faltas, permitidas, restantes: permitidas - faltas, presencas: dadas - faltas,
+      presencasNecessarias: total - permitidas, aulasRestantes: total - dadas, dadas, total,
+      ultimaAula: inicios.at(-1), proximaAula: inicios.find((t) => t > agora) ?? null, datas, diasAula,
+      feriados: Object.entries(feriados).filter(([d]) => semana.includes(new Date(d + 'T12:00:00Z').getUTCDay())).map(([dia, nome]) => ({ dia, nome })),
+    };
+  });
+  materias.sort((a, b) => folga(a) - folga(b) || a.restantes - b.restantes);
+  return { materias, fimAulas: fimAulas.sort((a, b) => a - b), atualizadoEm: agora };
+}
+
 export default async function handler(req, res) {
   const caminho = new URL(req.url, 'http://x').pathname;
   try {
@@ -166,6 +207,8 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && caminho === '/sair') {
       return redirecionar(res, '/', [apagar('sessao'), apagar('lembrar')]);
     }
+
+    if (req.method === 'GET' && caminho === '/demo') return responder(res, 200, pagina(dadosDeExemplo(), { modo: 'web' }));
 
     if (req.method !== 'GET' || caminho !== '/') return responder(res, 404, 'Não encontrado');
 
