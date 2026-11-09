@@ -544,7 +544,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .cab { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .hero-topo { display:flex; justify-content:space-between; align-items:center; gap:8px; }
   .garantida { display:inline-flex; align-items:center; gap:4px; flex:none; padding:2px 9px 2px 7px; border-radius:980px; white-space:nowrap;
-               font-size:12px; font-weight:600; color:var(--on); background:var(--bom); }
+               font-size:12px; font-weight:600; color:var(--on); background:var(--pres); }
   .garantida .check { visibility:visible; }
   .garantida[hidden] { display:none; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
