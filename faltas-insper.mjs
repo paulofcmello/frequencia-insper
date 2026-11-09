@@ -825,9 +825,9 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 11%, transparent); --sombra:color-mix(in srgb, var(--nivel) 30%, transparent);
     background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
   @media (prefers-color-scheme: dark) { .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 16%, transparent); --sombra:color-mix(in srgb, var(--nivel) 26%, rgb(0 0 0 / .5)); } }
-  /* Presença garantida (dado real, a simulação não mexe): cartão todo esverdeado */
-  .premium .grade > .card.garantido { --tom:color-mix(in srgb, var(--bom) 26%, transparent);
-    background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), linear-gradient(color-mix(in srgb, var(--bom) 9%, transparent), color-mix(in srgb, var(--bom) 9%, transparent)), var(--card); }
+  /* Presença garantida (dado real, a simulação não mexe): cartão especial, menta fresca com aro e brilho verdes */
+  .premium .grade > .card.garantido { --borda:color-mix(in srgb, var(--bom) 55%, transparent); --sombra:color-mix(in srgb, var(--bom) 55%, transparent);
+    background:linear-gradient(135deg, color-mix(in srgb, var(--bom) 20%, var(--card)), color-mix(in srgb, var(--bom) 5%, var(--card)) 70%), var(--card); }
   @media (prefers-reduced-motion: reduce) { .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
 </style>
 </head>
