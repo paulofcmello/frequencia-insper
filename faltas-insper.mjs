@@ -574,6 +574,9 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .hero-linha { display:flex; align-items:baseline; gap:10px; }
   .big { font-size:44px; line-height:.9; font-weight:700; letter-spacing:-.04em; color:var(--nivel); min-width:1ch; }
   .hero-sub { color:var(--sub); font-size:14px; }
+  /* Número simulado não pode parecer o real: sublinhado tracejado e selo "simulado" no título */
+  .simulado .big { text-decoration:underline dashed 2px; text-underline-offset:6px; }
+  .simulado .hero-titulo::after { content:' · simulado'; font-weight:500; color:var(--sub); }
   .blocos { display:flex; gap:4px; margin-top:10px; }
   .blocos i { flex:1; height:8px; border-radius:3px; background:var(--trilho); }
   .blocos i.livre { background:var(--nivel); }
@@ -918,15 +921,16 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     animar ? mover(reordenar) : reordenar();
   }
   const salvarPersonalizada = () => salvarOrdem({ modo: 'custom', lista: cartoes().map((c) => c.dataset.nome) });
-  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); ligarSimulador(simLigado()); });
+  document.addEventListener('DOMContentLoaded', () => { aplicarOrdem(false); ligarSimulador(false); });
 
   // Simulador (liga/desliga no topo): em cada aula futura marca "vou faltar" ou "vou com certeza" (ex.: prova).
   // Aula certa sai da conta das que dá pra faltar. Tudo guardado só neste navegador.
-  const CHAVE_SIM = 'frequencia-simulacao', CHAVE_VOU = 'frequencia-vou', CHAVE_SIM_ON = 'frequencia-simulador';
+  const CHAVE_SIM = 'frequencia-simulacao', CHAVE_VOU = 'frequencia-vou';
   const hojeSP = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
   const ler = (k) => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; } };
   const gravar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-  const simLigado = () => { try { return localStorage.getItem(CHAVE_SIM_ON) === '1'; } catch { return false; } };
+  // Sempre abre desligado, com os números reais; as marcações ficam guardadas pra quando ligar
+  const simLigado = () => document.querySelector('main').classList.contains('simulando');
   const salvarSim = () => {
     const faltas = {}, vou = {};
     for (const c of cartoes()) {
@@ -940,7 +944,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     melhoresDias(); // presença garantida tira o dia das sugestões na hora
   };
   function ligarSimulador(on) {
-    try { localStorage.setItem(CHAVE_SIM_ON, on ? '1' : '0'); } catch {}
     document.querySelector('main').classList.toggle('simulando', on);
     document.getElementById('simulador')?.setAttribute('aria-checked', on);
     aplicarSim();
@@ -1011,9 +1014,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
         : A === 0
           ? ['Vai em todas', 0, 'você marcou todas as aulas restantes']
           : [R === 0 ? 'Não pode mais faltar' : 'Pode faltar', pode, 'de ' + A + (A === 1 ? ' aula restante' : ' aulas restantes') + (R > 0 ? ' · ' + pct + '%' : '') + certas];
+      const real = Math.max(0, Math.min(R0, A0));
       c.querySelector('.hero-titulo').textContent = tit;
       big.textContent = num;
-      c.querySelector('.hero-sub').textContent = sub;
+      c.querySelector('.hero-sub').textContent = sub + (k || v ? ' · real: ' + real : '');
     }
     // Presença garantida: as presenças que faltam cabem nas aulas certas
     const faltamPres = Math.max(0, A - R0);
@@ -1031,6 +1035,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const partes = [k && (k === 1 ? '1 falta' : k + ' faltas'), v && (v === 1 ? '1 presença' : v + ' presenças')].filter(Boolean);
     const aviso = c.querySelector('.sim');
     aviso.hidden = !partes.length;
+    c.classList.toggle('simulado', partes.length > 0);
     aviso.querySelector('b').textContent = partes.join(' e ');
   }
   document.addEventListener('click', (e) => {
