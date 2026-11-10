@@ -654,7 +654,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .legenda .plano::before { box-shadow:inset 0 0 0 1.5px var(--ruim); }
   .blocos i.plano { background:transparent; box-shadow:inset 0 0 0 1.5px var(--ruim); }
   .sim { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--ruim); }
-  .sim[hidden] { display:none; }
+  .sim[hidden], .limpar-sim[hidden] { display:none; }
   .limpar-sim { font:inherit; padding:0; border:0; background:none; color:var(--pres); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
   #so-hoje { font:inherit; font-size:13px; font-weight:600; color:var(--txt); background:var(--trilho); border:0; border-radius:980px;
              padding:4px 12px; cursor:pointer; align-self:center; transition:background-color .15s, color .15s; }
@@ -808,7 +808,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     background:radial-gradient(90% 55% at 50% -10%, color-mix(in srgb, var(--pres) 14%, transparent), transparent 70%); }
   @media (prefers-color-scheme: dark) { .premium body::before { background-image:radial-gradient(circle, rgb(255 255 255 / .14) 1.1px, transparent 1.5px); } }
   /* Aviso "Simulando…": chip neutro (vermelho fica só pra falta de verdade) */
-  .premium .sim { width:max-content; max-width:100%; margin-top:10px; padding:4px 6px 4px 11px; border-radius:980px; color:var(--sub);
+  .premium .sim { width:max-content; max-width:100%; min-height:29px; margin-top:10px; padding:4px 6px 4px 11px; border-radius:980px; color:var(--sub);
                   background:var(--trilho); font-size:12px; }
   .premium .sim b { color:var(--txt); font-weight:600; }
   .premium .limpar-sim { padding:2px 9px; border-radius:980px; background:var(--card); color:var(--pres); text-decoration:none; font-weight:600;
@@ -948,6 +948,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     document.querySelector('main').classList.toggle('simulando', on);
     document.getElementById('simulador')?.setAttribute('aria-checked', on);
     aplicarSim();
+    // Ligou sem nenhum calendário aberto: abre o da primeira matéria, senão o toque no switch não mostra nada
+    if (on && !document.querySelector('.cal-box[open]')) cartoes().find((c) => c.offsetParent)?.querySelector('.cal-box > summary')?.click();
   }
   // Desligado: cartões com os números reais; as marcações ficam guardadas pra quando ligar de novo
   function aplicarSim() {
@@ -1035,9 +1037,12 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     c.querySelector('.barra.falt').style.width = (P > 0 ? Math.min(100, (F / P) * 100) : 0).toFixed(1) + '%';
     const partes = [k && (k === 1 ? '1 falta' : k + ' faltas'), v && (v === 1 ? '1 presença' : v + ' presenças')].filter(Boolean);
     const aviso = c.querySelector('.sim');
-    aviso.hidden = !partes.length;
     c.classList.toggle('simulado', partes.length > 0);
-    aviso.querySelector('b').textContent = partes.join(' e ');
+    // Com o simulador ligado o chip fica sempre lá: a primeira marcação não empurra o calendário pra baixo do dedo
+    aviso.hidden = !simLigado();
+    aviso.firstChild.textContent = partes.length ? 'Simulando ' : 'Simulador ligado · ';
+    aviso.querySelector('b').textContent = partes.length ? partes.join(' e ') : 'nenhuma aula marcada';
+    aviso.querySelector('.limpar-sim').hidden = !partes.length;
   }
   document.addEventListener('click', (e) => {
     if (e.target.closest('#simulador')) return ligarSimulador(!simLigado());
