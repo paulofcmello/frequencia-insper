@@ -805,6 +805,14 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .melhores p { margin:0 0 0 4px; color:var(--sub); font-size:14px; }
   /* Presença garantida (dado real, a simulação não mexe): só o aro e o brilho ficam verdes */
   .premium .grade > .card.garantido { outline:1.5px solid color-mix(in srgb, var(--bom) 45%, transparent); outline-offset:-1.5px; }
+  /* Tela de toque: área de toque de pelo menos 44×44 em volta dos controles pequenos, sem mudar o desenho */
+  @media (pointer: coarse) {
+    #ordem, #so-hoje, #atualizar, .sair, .switch, .nav-mes button, .dias button, .limpar-sim, .modo-toque button, .alca { position:relative; }
+    #ordem::before, #so-hoje::before, #atualizar::before, .sair::before, .switch::before, .nav-mes button::before, .dias button::before,
+    .limpar-sim::before, .modo-toque button::before, .alca::before {
+      content:''; position:absolute; left:50%; top:50%; width:max(100%, 44px); height:max(100%, 44px); transform:translate(-50%, -50%); }
+    .premium .nav-mes { gap:14px; } /* as duas setas não dividem a mesma área */
+  }
   @media (prefers-reduced-motion: reduce) { .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
 </style>
 </head>
