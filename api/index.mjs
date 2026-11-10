@@ -1,7 +1,8 @@
 // Site multiusuário (Vercel): cada pessoa entra com o próprio login do Aluno Online.
-// O servidor não guarda senha de ninguém:
+// O servidor nunca vê a senha: o navegador criptografa com a chave pública do portal do Insper
+// (RSA, igual ao próprio Aluno Online) e só o portal consegue abrir. Guardado só no navegador da pessoa:
 //  - cookie "sessao": os cookies da sessão do portal, criptografados (vale enquanto o portal aceitar)
-//  - cookie "lembrar" (só se a pessoa marcar "Manter conectado"): login e senha criptografados,
+//  - cookie "lembrar" (só se a pessoa marcar "Manter conectado"): login e a senha já cifrada pelo portal,
 //    guardados apenas no navegador dela, pra entrar de novo sozinho quando a sessão do portal expirar
 // Os dois são HttpOnly (nenhum script da página lê) e criptografados com AES-256-GCM usando a
 // variável de ambiente SEGREDO, que só existe no servidor.
@@ -106,21 +107,63 @@ function telaLogin(erro = '') {
 </style>
 </head>
 <body>
-<form method="post" action="/login" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Entrando…'">
+<form method="post" action="/login">
   <h1>Frequência</h1>
   <p class="sub">Entre com o mesmo login e senha do Aluno Online (sga.insper.edu.br).</p>
   <label for="usuario">Login</label>
   <input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
   <label for="senha">Senha</label>
-  <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+  <!-- Sem name: a senha em texto nunca é enviada, só a versão cifrada no campo escondido -->
+  <input id="senha" type="password" autocomplete="current-password" required>
+  <input type="hidden" name="senhaCifrada">
   <label class="lembrar"><input type="checkbox" name="lembrar" value="1">
-    <span>Manter conectado neste navegador<small>A senha fica criptografada só neste navegador, pra entrar sozinho quando a sessão do portal expirar. Use só no seu computador.</small></span>
+    <span>Manter conectado neste navegador<small>A senha cifrada fica só neste navegador, pra entrar sozinho quando a sessão do portal expirar. Use só no seu computador.</small></span>
   </label>
-  ${erro ? '<p class="erro">' + esc(erro) + '</p>' : ''}
+  <p class="erro" ${erro ? '' : 'hidden'}>${esc(erro)}</p>
   <button type="submit">Entrar</button>
   <a class="demo" href="/demo">Não estuda no Insper? Ver um exemplo</a>
-  <p class="aviso">Projeto pessoal, não oficial do Insper. A senha é usada só pra entrar no Aluno Online e não fica guardada no servidor.</p>
+  <p class="aviso">Projeto pessoal, não oficial do Insper. A senha é criptografada aqui no seu navegador com a chave do portal do Insper; este site nunca vê a senha.</p>
 </form>
+<script>
+// RSA PKCS#1 v1.5 (o mesmo do JSEncrypt que o Aluno Online usa). WebCrypto não tem esse padding,
+// então ele só lê a chave; a conta é feita com BigInt.
+async function cifrar(senha) {
+  const pem = await (await fetch('/chave')).text();
+  const der = Uint8Array.from(atob(pem.replace(/-----[^-]+-----|\\s+/g, '')), (c) => c.charCodeAt(0));
+  const jwk = await crypto.subtle.exportKey('jwk',
+    await crypto.subtle.importKey('spki', der, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['encrypt']));
+  const hex = (bytes) => [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const num = (b64url) => BigInt('0x' + hex(Uint8Array.from(atob(b64url.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))));
+  const n = num(jwk.n), e = num(jwk.e), tam = (n.toString(16).length + 1) >> 1;
+  const msg = new TextEncoder().encode(senha);
+  if (msg.length > tam - 11) throw new Error('Senha longa demais.');
+  // Bloco: 00 02 <bytes aleatórios não nulos> 00 <senha>
+  const bloco = new Uint8Array(tam);
+  bloco[1] = 2;
+  const enchimento = bloco.subarray(2, tam - msg.length - 1);
+  crypto.getRandomValues(enchimento);
+  for (let i = 0; i < enchimento.length; i++) while (!enchimento[i]) enchimento[i] = crypto.getRandomValues(new Uint8Array(1))[0];
+  bloco.set(msg, tam - msg.length);
+  let c = 1n;
+  for (let b = BigInt('0x' + hex(bloco)), x = e; x; x >>= 1n, b = (b * b) % n) if (x & 1n) c = (c * b) % n;
+  return btoa(c.toString(16).padStart(tam * 2, '0').match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join(''));
+}
+const form = document.querySelector('form'), botao = form.querySelector('button'), erro = form.querySelector('.erro');
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  botao.disabled = true;
+  botao.textContent = 'Entrando…';
+  try {
+    form.senhaCifrada.value = await cifrar(document.getElementById('senha').value);
+    form.submit();
+  } catch {
+    botao.disabled = false;
+    botao.textContent = 'Entrar';
+    erro.textContent = 'Não consegui preparar o login. Tente de novo em alguns minutos.';
+    erro.hidden = false;
+  }
+});
+</script>
 </body>
 </html>`;
 }
@@ -190,22 +233,31 @@ export default async function handler(req, res) {
   const caminho = new URL(req.url, 'http://x').pathname;
   try {
     if (req.method === 'POST' && caminho === '/login') {
-      const { usuario, senha, lembrar } = await lerCorpo(req);
-      if (!usuario || !senha) return responder(res, 400, telaLogin('Preencha login e senha.'));
+      const { usuario, senhaCifrada, lembrar } = await lerCorpo(req);
+      if (!usuario || !senhaCifrada) return responder(res, 400, telaLogin('Preencha login e senha.'));
+      if (!/^[A-Za-z0-9+/=]{1,2000}$/.test(senhaCifrada)) return responder(res, 400, telaLogin('Login inválido.'));
+      const credenciais = { usuario: String(usuario).trim(), senhaCifrada };
       let entrada;
       try {
-        entrada = await entrar({ usuario: String(usuario).trim(), senha: String(senha) });
+        entrada = await entrar(credenciais);
       } catch (e) {
         return responder(res, 401, telaLogin(mensagemDeErro(e)));
       }
       const cookies = [guardarSessao(entrada.s, entrada.aluno)];
-      cookies.push(lembrar ? cookie('lembrar', cifrar({ usuario: String(usuario).trim(), senha: String(senha) }), VALIDADE_LEMBRAR) : apagar('lembrar'));
+      cookies.push(lembrar ? cookie('lembrar', cifrar(credenciais), VALIDADE_LEMBRAR) : apagar('lembrar'));
       // Redireciona pra que o Safari ofereça salvar a senha e o F5 não reenvie o formulário
       return redirecionar(res, '/', cookies);
     }
 
     if (req.method === 'POST' && caminho === '/sair') {
       return redirecionar(res, '/', [apagar('sessao'), apagar('lembrar')]);
+    }
+
+    if (req.method === 'GET' && caminho === '/chave') {
+      const pem = await new Sessao().chavePublica();
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.end(pem);
     }
 
     if (req.method === 'GET' && caminho === '/demo') return responder(res, 200, pagina(dadosDeExemplo(), { modo: 'web' }));

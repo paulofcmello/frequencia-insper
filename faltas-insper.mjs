@@ -116,14 +116,19 @@ class Sessao {
     return res.json();
   }
 
-  async login({ usuario, senha }) {
-    await this.req('');
+  async chavePublica() {
     const chave = (await (await this.req('config-properties/public-key')).text()).trim();
     // A chave vem numa linha só; o PEM precisa de quebras a cada 64 caracteres
     const corpo = chave.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
-    const pem = '-----BEGIN PUBLIC KEY-----\n' + corpo.match(/.{1,64}/g).join('\n') + '\n-----END PUBLIC KEY-----\n';
+    if (!/^[A-Za-z0-9+/=]{100,2000}$/.test(corpo)) throw new Error('Chave pública do portal em formato inesperado.');
+    return '-----BEGIN PUBLIC KEY-----\n' + corpo.match(/.{1,64}/g).join('\n') + '\n-----END PUBLIC KEY-----\n';
+  }
+
+  // senhaCifrada: já criptografada no navegador (site da Vercel), pra o servidor nunca ver a senha
+  async login({ usuario, senha, senhaCifrada }) {
+    await this.req('');
     // Mesmo formato do JSEncrypt usado pelo portal: RSA PKCS#1 v1.5 em base64
-    const senhaCifrada = publicEncrypt({ key: pem, padding: constants.RSA_PKCS1_PADDING }, Buffer.from(senha)).toString('base64');
+    senhaCifrada ??= publicEncrypt({ key: await this.chavePublica(), padding: constants.RSA_PKCS1_PADDING }, Buffer.from(senha)).toString('base64');
 
     const res = await this.req('auth', {
       method: 'POST',

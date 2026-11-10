@@ -40,6 +40,7 @@ Também existem: modo `--github` + `.github/workflows/atualizar.yml` (GitHub Pag
 - Nunca commitar `frequencia-dados.json`, `frequencia.html`, `atualizacao.log`, `site/` (no `.gitignore`).
 - Commits com e-mail noreply do GitHub (`233840633+paulofcmello@users.noreply.github.com`).
 - Site da Vercel: sessão e "manter conectado" só em cookies HttpOnly criptografados (AES-256-GCM com `SEGREDO`); nada de senha em log ou banco.
+- A senha é cifrada no navegador (RSA PKCS#1 v1.5 com a chave do portal, via `/chave`); o servidor só recebe `senhaCifrada` e nunca a senha em texto. O input de senha não tem `name` de propósito.
 
 ## Testar
 
