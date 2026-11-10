@@ -697,7 +697,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .card { background:var(--card); backdrop-filter:none; -webkit-backdrop-filter:none; }
   .premium .topo { position:sticky; top:12px; z-index:5; margin:0 0 26px; padding:10px 10px 10px 22px; border-radius:28px; }
   .premium .titulo { align-items:center; gap:6px 14px; }
-  .premium h1 { font-size:22px; font-weight:700; letter-spacing:-.025em; }
+  /* Papéis de texto: número 52 · matéria e valores 20 · seção 17 · texto 14 · rótulo 13 · nota 12 */
+  .premium h1 { font-size:20px; font-weight:700; letter-spacing:-.02em; }
   .premium .sub { font-size:13px; }
   .premium .ordem { font-size:13px; }
   /* Mola do Liquid Glass: passa um pouco do ponto e assenta */
@@ -728,14 +729,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .card { border:0; border-radius:26px; padding:18px 22px 12px;
                    transition:transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1); }
   .premium .card.arrastando { transition:none; } /* o arrastado segue o dedo sem atraso */
-  .premium h2 { font-size:19px; font-weight:650; letter-spacing:-.02em; }
+  .premium h2 { font-size:20px; font-weight:650; letter-spacing:-.022em; }
   .premium .hero { margin-top:8px; }
   .premium .big { font-size:52px; font-weight:700; letter-spacing:-.045em; }
   .premium .blocos { gap:3px; margin-top:12px; } .premium .blocos i { height:6px; border-radius:980px; }
   .premium .stats { margin-top:14px; gap:24px; }
-  .premium .k { font-size:13px; } .premium .v { font-size:22px; font-weight:600; letter-spacing:-.03em; }
+  .premium .k { font-size:13px; } .premium .v { font-size:20px; font-weight:600; letter-spacing:-.02em; }
+  .premium .v small { font-size:13px; }
   .premium .trilho { height:5px; border-radius:980px; } .premium .barra { border-radius:980px; }
-  .premium footer { margin-top:12px; padding-top:10px; }
+  .premium footer { margin-top:12px; padding-top:10px; font-size:13px; }
   .premium .rodape { text-align:center; }
   @media (max-width:1000px) { .premium #ordem-rotulo { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); } }
   /* Celular: barra em 3 linhas (título · ordem e Hoje · Simulador com Atualizar/Sair) e melhores dias numa faixa que rola de lado */
@@ -767,7 +769,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .nav-mes button:hover:not(:disabled) { background:var(--trilho); }
   .premium .nav-mes button:active:not(:disabled) { transform:scale(.9); }
   .premium .dias { gap:6px 2px; }
-  .premium .dias b { font-size:11px; font-weight:600; letter-spacing:.02em; padding-bottom:2px; }
+  .premium .dias b { font-size:12px; font-weight:600; padding-bottom:2px; }
   .premium .dias span, .premium .dias button { justify-self:center; display:grid; place-items:center; width:100%; max-width:38px; aspect-ratio:1;
                                                padding:0; border-radius:50%; font-size:15px; color:var(--txt); }
   .premium .dias span:empty { visibility:hidden; }
@@ -784,10 +786,10 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .legenda .hoje::before { box-shadow:inset 0 0 0 1.5px var(--txt); }
   .premium .legenda .vou::before { background:color-mix(in srgb, var(--bom) 14%, transparent); box-shadow:inset 0 0 0 1.5px var(--bom); }
   .premium .blocos i.vou { background:transparent; box-shadow:inset 0 0 0 1.5px var(--bom); }
-  .premium .legenda { justify-content:center; gap:4px 14px; margin-top:16px; font-size:11.5px; }
+  .premium .legenda { justify-content:center; gap:4px 14px; margin-top:16px; font-size:12px; }
   .premium .legenda span::before { width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:0; }
   .premium .legenda .aula::before { background:color-mix(in srgb, var(--pres) 45%, transparent); }
-  .premium .cal-feriados, .premium .cal-dica { text-align:center; font-size:11.5px; margin-top:6px; }
+  .premium .cal-feriados, .premium .cal-dica { text-align:center; font-size:12px; margin-top:6px; text-wrap:balance; }
   .premium .modo-toque { margin:14px auto 0; }
   /* Aviso "Simulando…": chip neutro (vermelho fica só pra falta de verdade) */
   .premium .sim { width:max-content; max-width:100%; min-height:29px; margin-top:10px; padding:4px 6px 4px 11px; border-radius:980px; color:var(--sub);
@@ -797,13 +799,13 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
                          box-shadow:0 1px 2px rgb(0 0 0 / .08); }
   /* Melhores dias pra faltar: três cartõezinhos de vidro abaixo da grade */
   .melhores { margin:0 0 22px; }
-  .melhores h2 { font-size:15px; font-weight:650; color:var(--sub); margin:0 0 10px 4px; letter-spacing:-.01em; }
+  .melhores h2 { font-size:17px; font-weight:650; color:var(--txt); margin:0 0 10px 4px; letter-spacing:-.02em; }
   .melhores ol { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:0; padding:0; list-style:none; }
   .melhores li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:14px 18px; border-radius:20px;
                  background:var(--card); box-shadow:inset 0 1px 0 var(--brilho, transparent), inset 0 0 0 1px var(--borda), 0 10px 26px -14px var(--sombra, rgb(0 0 0 / .2)); }
   .melhores li b { font-size:17px; font-weight:650; letter-spacing:-.02em; text-transform:capitalize; }
   .melhores li span { font-size:13px; font-weight:600; color:var(--bom); }
-  .melhores li small { grid-column:1 / -1; font-size:12.5px; color:var(--sub); line-height:1.45; }
+  .melhores li small { grid-column:1 / -1; font-size:13px; color:var(--sub); line-height:1.45; }
   .melhores p { margin:0 0 0 4px; color:var(--sub); font-size:14px; }
   /* Presença garantida (dado real, a simulação não mexe): só o aro e o brilho ficam verdes */
   .premium .grade > .card.garantido { outline:1.5px solid color-mix(in srgb, var(--bom) 45%, transparent); outline-offset:-1.5px; }
