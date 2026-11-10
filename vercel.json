@@ -3,7 +3,8 @@
     { "source": "/", "destination": "/api/index" },
     { "source": "/login", "destination": "/api/index" },
     { "source": "/sair", "destination": "/api/index" },
-    { "source": "/demo", "destination": "/api/index" }
+    { "source": "/demo", "destination": "/api/index" },
+    { "source": "/chave", "destination": "/api/index" }
   ],
   "functions": {
     "api/index.mjs": { "maxDuration": 30 }
