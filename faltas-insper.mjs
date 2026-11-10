@@ -296,19 +296,22 @@ function calendario(m) {
   for (let d = new Date(m.diasAula[0].slice(0, 7) + '-01T12:00:00Z'); d.toISOString().slice(0, 7) <= m.diasAula.at(-1).slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) {
     const ano = d.getUTCFullYear(), mes = d.getUTCMonth();
     const nDias = new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate();
-    let dias = '<i></i>'.repeat(d.getUTCDay());
+    const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+    let dias = '<i aria-hidden="true"></i>'.repeat(d.getUTCDay());
     for (let i = 1; i <= nDias; i++) {
       const iso = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
       const tipo = faltas.has(iso) ? 'falta' : feriados[iso] ? 'feriado' : aulas[iso] ? (iso < hoje ? 'foi' : 'aula') : '';
       const dica = faltas.has(iso) ? 'Falta' : feriados[iso] ? 'Feriado: ' + feriados[iso] : aulas[iso] ? 'Aula ' + aulas[iso].join(', ') + '' : '';
-      const classe = `class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''}`;
+      // Nome completo pro leitor de tela: "12 de novembro, aula 09:45, hoje"
+      const estado = faltas.has(iso) ? 'falta' : feriados[iso] ? 'feriado: ' + feriados[iso] : aulas[iso] ? (iso < hoje ? 'presença' : 'aula ' + aulas[iso].join(', ')) : '';
+      const rotulo = i + ' de ' + nome + (estado ? ', ' + estado : '') + (iso === hoje ? ', hoje' : '');
+      const classe = `class="${tipo}${iso === hoje ? ' hoje' : ''}"${dica ? ` title="${esc(dica)}"` : ''} aria-label="${esc(rotulo)}"`;
       // Aula futura é botão: com o simulador ligado, o toque marca "vou faltar" ou "vou com certeza"
       dias += tipo === 'aula'
         ? `<button type="button" ${classe} data-dia="${iso}" data-n="${aulas[iso].length}" aria-pressed="false">${i}</button>`
-        : `<span ${classe}>${i}</span>`;
+        : `<span role="img" ${classe}>${i}</span>`;
     }
-    const nome = new Date(Date.UTC(ano, mes, 15)).toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
-    meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b>D</b><b>S</b><b>T</b><b>Q</b><b>Q</b><b>S</b><b>S</b>${dias}</div></div>`);
+    meses.push(`<div class="mes"${d.toISOString().slice(0, 7) === hoje.slice(0, 7) ? '' : ' hidden'}><div class="mes-nome">${nome}</div><div class="dias"><b aria-hidden="true">D</b><b aria-hidden="true">S</b><b aria-hidden="true">T</b><b aria-hidden="true">Q</b><b aria-hidden="true">Q</b><b aria-hidden="true">S</b><b aria-hidden="true">S</b>${dias}</div></div>`);
   }
   const listaFeriados = (m.feriados || [])
     .map((f) => f.dia.split('-').reverse().slice(0, 2).join('/') + ' ' + esc(f.nome.toLowerCase().replace(/(^|\s)(?!(?:de|da|do|das|dos|e)\s)(\p{L})/gu, (_, e, l) => e + l.toUpperCase()))) // portal manda tudo em maiúsculas; nomes próprios ficam com inicial
@@ -375,10 +378,9 @@ function cartao(m, i) {
   const curta = (t, opc) => esc(dataBR(t, opc).replace('.', ''));
 
   return `
-  <details class="card ${nivel}${faltamPresencas === 0 ? ' garantido' : ''}" style="--c:${i}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}"
+  <article class="card ${nivel}${faltamPresencas === 0 ? ' garantido' : ''}" style="--c:${i}" data-i="${i}" data-nome="${esc(m.nome)}" data-pode="${m.restantes < 0 ? m.restantes : podeFaltar}" data-prox="${m.proximaAula || ''}"
     data-restantes="${m.restantes}" data-aulas-restantes="${m.aulasRestantes}" data-faltas="${m.faltas}" data-permitidas="${m.permitidas}"
     data-chave="${m.faltas}|${m.presencas}|${m.restantes}|${m.aulasRestantes}|${m.proximaAula || ''}" data-aulas="${esc(JSON.stringify(m.diasAula || []))}">
-    <summary>
     <div class="cab">
       <h2>${esc(nomeBonito(m.nome))}</h2>
       <button type="button" class="alca" aria-label="Mover ${esc(nomeBonito(m.nome))} (arraste ou use as setas)">${ALCA}</button>
@@ -406,16 +408,15 @@ function cartao(m, i) {
         <div class="nota">${ultimas ? esc(ultimas) : 'nenhuma falta'}</div>
       </div>
     </div>
-    <footer>
+    <details class="cal-box"><summary><footer>
       <div>
         ${m.proximaAula ? '<div class="prox">Próxima <b>' + curta(m.proximaAula, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + '</b></div>' : ''}
         <div>${m.dadas}/${m.total} aulas dadas${m.ultimaAula ? ' · última ' + curta(m.ultimaAula, { day: '2-digit', month: '2-digit' }) : ''}</div>
       </div>
       <span class="ver-cal">Calendário ${SETA_BAIXO}</span>
-    </footer>
-    </summary>
-    <div class="cal">${calendario(m)}</div>
-  </details>`;
+    </footer></summary>
+    <div class="cal">${calendario(m)}</div></details>
+  </article>`;
 }
 
 // Botão do servidor local: chama /atualizar no próprio Mac
@@ -1051,7 +1052,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     const b = e.target.closest('main.simulando .cal button[data-dia]');
     const limpar = e.target.closest('.limpar-sim');
     if (!b && !limpar) return;
-    e.preventDefault(); // "limpar" fica dentro do <summary>: não abre/fecha o calendário
+    e.preventDefault();
     const c = (b || limpar).closest('.card');
     if (b) {
       const tipo = b.closest('.cal').dataset.modo === 'vou' ? 'vou' : 'plano';
@@ -1181,7 +1182,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   // Abre e fecha o calendário deslizando (o <details> sozinho só pula)
   document.addEventListener('click', (e) => {
     if (e.target.closest('.alca, .limpar-sim')) return e.preventDefault(); // alça e "limpar" não abrem o calendário
-    const s = e.target.closest('.card > summary');
+    const s = e.target.closest('.cal-box > summary');
     if (!s || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     e.preventDefault();
     const d = s.parentElement, cal = d.querySelector('.cal');
