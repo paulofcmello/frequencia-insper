@@ -514,7 +514,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
 <title>Frequência Insper</title>
 <style>
   :root { --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --trilho:#e5e5ea;
-          --bom:#248a3d; --medio:#c93400; --ruim:#d70015; --pres:#0a63c9; --borda:#e5e5ea; --on:#fff; --marca:#ffcc00; }
+          --bom:#1d7532; --medio:#b83000; --ruim:#c4000f; --pres:#0a63c9; --borda:#e5e5ea; --on:#fff; --marca:#ffcc00; }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --trilho:#3a3a3c;
             --bom:#30d158; --medio:#ff9f0a; --ruim:#ff453a; --pres:#409cff; --borda:#2c2c2e; --on:#000; --marca:#ffd60a; }

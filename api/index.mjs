@@ -83,9 +83,9 @@ function telaLogin(erro = '') {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frequência — entrar</title>
 <style>
-  :root { --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --borda:#d2d2d7; --azul:#0a63c9; --erro:#d70015; }
+  :root { --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --borda:#d2d2d7; --azul:#0a63c9; --erro:#d70015; --sobre-azul:#fff; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --borda:#3a3a3c; --azul:#409cff; --erro:#ff453a; }
+    :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --borda:#3a3a3c; --azul:#409cff; --erro:#ff453a; --sobre-azul:#000; }
   }
   * { box-sizing:border-box; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
@@ -99,7 +99,7 @@ function telaLogin(erro = '') {
   .lembrar { display:flex; gap:8px; align-items:flex-start; margin-top:16px; font-size:14px; }
   .lembrar small { display:block; color:var(--sub); font-size:12px; }
   button { margin-top:20px; width:100%; font:inherit; font-weight:600; padding:11px; border:0; border-radius:980px;
-           background:var(--azul); color:#fff; cursor:pointer; }
+           background:var(--azul); color:var(--sobre-azul); cursor:pointer; }
   button:disabled { opacity:.6; }
   .erro { color:var(--erro); font-size:14px; margin:12px 0 0; }
   .aviso { color:var(--sub); font-size:12px; margin:18px 0 0; }
