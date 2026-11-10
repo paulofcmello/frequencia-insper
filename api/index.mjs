@@ -119,6 +119,7 @@ function telaLogin(erro = '') {
   .aviso { color:var(--sub); font-size:12px; margin:10px 0 0; text-align:center; }
   @media (prefers-reduced-motion: reduce) { input, button { transition:none; } }
 </style>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <form method="post" action="/login">

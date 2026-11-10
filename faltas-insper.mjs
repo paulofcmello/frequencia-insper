@@ -815,6 +815,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   }
   @media (prefers-reduced-motion: reduce) { .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
 </style>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body data-atualizado="${esc(atualizadoEm)}">
 <script>
