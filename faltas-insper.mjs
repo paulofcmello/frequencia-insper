@@ -551,9 +551,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .hero-topo { display:flex; justify-content:space-between; align-items:center; gap:8px; }
   .garantida { display:inline-flex; align-items:center; gap:4px; flex:none; padding:2px 9px 2px 7px; border-radius:980px; white-space:nowrap;
                font-size:12px; font-weight:600; color:var(--on); background:var(--bom);
-               position:relative; overflow:hidden; animation:surgir .7s cubic-bezier(.34,1.56,.64,1) .45s backwards; }
-  .garantida::after { content:''; position:absolute; inset:0; transform:translateX(-130%); pointer-events:none;
-                      background:linear-gradient(100deg, transparent 30%, rgb(255 255 255 / .55) 50%, transparent 70%); animation:brilho 1.1s ease-out 1.05s 1 both; }
+               animation:surgir .4s cubic-bezier(.16,1,.3,1) .35s backwards; }
   .garantida .check { visibility:visible; }
   .garantida[hidden] { display:none; }
   .alca { display:none; place-items:center; flex:none; width:28px; height:28px; margin:-5px -8px -5px 0; padding:0; border:0; border-radius:6px;
@@ -591,8 +589,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   /* Ao abrir: barras crescem e os blocos livres se acendem um a um, cartão por cartão */
   @keyframes crescer { from { transform:scaleX(0); } }
   @keyframes acender { from { background:var(--trilho); transform:scaleY(.5); } }
-  @keyframes surgir { from { opacity:0; transform:scale(.55); } }
-  @keyframes brilho { to { transform:translateX(130%); } }
+  @keyframes surgir { from { opacity:0; } }
   @keyframes pulsar { from { box-shadow:0 0 0 0 color-mix(in srgb, var(--nivel) 50%, transparent); } to { box-shadow:0 0 0 12px transparent; } }
   .barra { transform-origin:left; animation:crescer .8s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--c, 0) * 70ms + 80ms); }
   .blocos i.livre { animation:acender .4s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--c, 0) * 70ms + var(--n, 0) * 50ms + 150ms); }
@@ -697,7 +694,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .topo, .premium .card, .premium .ordem-menu {
     background:var(--vidro); backdrop-filter:blur(28px) saturate(190%); -webkit-backdrop-filter:blur(28px) saturate(190%);
     box-shadow:inset 0 1px 0 var(--brilho), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .04), 0 14px 36px -14px var(--sombra); }
-  .premium .card { background:var(--card); }
+  .premium .card { background:var(--card); backdrop-filter:none; -webkit-backdrop-filter:none; }
   .premium .topo { position:sticky; top:12px; z-index:5; margin:0 0 26px; padding:10px 10px 10px 22px; border-radius:28px; }
   .premium .titulo { align-items:center; gap:6px 14px; }
   .premium h1 { font-size:22px; font-weight:700; letter-spacing:-.025em; }
@@ -705,24 +702,12 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .ordem { font-size:13px; }
   /* Mola do Liquid Glass: passa um pouco do ponto e assenta */
   html { --mola:linear(0, .08 3%, .3 8%, .62 14%, .88 21%, 1.04 28%, 1.09 34%, 1.08 40%, 1.03 50%, .995 62%, .992 72%, 1); }
-  /* Controles da barra: vidro por dentro do vidro (sem desfoque próprio), crescem e acendem onde o dedo toca */
-  .premium #ordem, .premium #so-hoje, .premium #atualizar {
-    --luz:rgb(255 255 255 / 0); position:relative;
-    background:radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), var(--luz), transparent 70%),
-               linear-gradient(180deg, rgb(255 255 255 / .82), rgb(255 255 255 / .42));
-    box-shadow:inset 0 1px 0 rgb(255 255 255 / .95), inset 0 -1px 0 rgb(255 255 255 / .35), inset 0 0 0 1px var(--borda),
-               0 1px 2px rgb(0 0 0 / .05), 0 6px 14px -6px var(--sombra);
-    transition:transform .5s var(--mola), box-shadow .3s, --luz .4s; }
-  @media (prefers-color-scheme: dark) { .premium #ordem, .premium #so-hoje {
-    background:radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), var(--luz), transparent 70%),
-               linear-gradient(180deg, rgb(255 255 255 / .16), rgb(255 255 255 / .05));
-    box-shadow:inset 0 1px 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 6px 14px -6px var(--sombra); } }
-  .premium #so-hoje[aria-pressed=true], .premium #atualizar {
-    background:radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), var(--luz), transparent 70%),
-               linear-gradient(180deg, rgb(255 255 255 / .28), rgb(255 255 255 / 0) 60%), var(--pres);
-    box-shadow:inset 0 1px 0 rgb(255 255 255 / .45), inset 0 0 0 1px rgb(0 0 0 / .06), 0 8px 18px -8px color-mix(in srgb, var(--pres) 80%, transparent); }
-  .premium #ordem:active, .premium #so-hoje:active, .premium #atualizar:active, .premium #ordem[aria-expanded=true] { transform:scale(1.08); --luz:rgb(255 255 255 / .7); }
-  @property --luz { syntax:'<color>'; inherits:false; initial-value:transparent; }
+  /* Controles da barra: superfícies lisas; o azul fica só no que está ligado e no Atualizar */
+  .premium #ordem, .premium #so-hoje { background:var(--card); box-shadow:inset 0 0 0 1px var(--borda); transition:transform .15s, background-color .15s; }
+  .premium #ordem:hover, .premium #so-hoje:hover { background:var(--trilho); }
+  .premium #so-hoje[aria-pressed=true], .premium #atualizar { background:var(--pres); color:var(--on); box-shadow:none; transition:transform .15s, filter .15s; }
+  .premium #atualizar:hover { filter:brightness(1.08); }
+  .premium #ordem:active, .premium #so-hoje:active, .premium #atualizar:active { transform:scale(.97); }
   /* Switch do iOS 26: ao apertar, a bolinha vira uma lente de vidro larga e desliza com mola */
   /* Borda de vidro com aberração cromática (o arco-íris fino nas bordas da lente) */
   html { --arco:inset 0 1.5px 0 rgb(255 255 255 / .95), inset 2px 0 1px -1px rgb(255 90 120 / .7), inset -2px 0 1px -1px rgb(80 170 255 / .7),
@@ -743,8 +728,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .card { border:0; border-radius:26px; padding:18px 22px 12px;
                    transition:transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1); }
   .premium .card.arrastando { transition:none; } /* o arrastado segue o dedo sem atraso */
-  .premium body:not(.arrastando) .card:hover { transform:translateY(-3px);
-    box-shadow:inset 0 1px 0 var(--brilho), inset 0 0 0 1px var(--borda), 0 2px 4px rgb(0 0 0 / .04), 0 30px 60px -22px var(--sombra); }
   .premium h2 { font-size:19px; font-weight:650; letter-spacing:-.02em; }
   .premium .hero { margin-top:8px; }
   .premium .big { font-size:52px; font-weight:700; letter-spacing:-.045em; }
@@ -766,19 +749,15 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
     .melhores li { scroll-snap-align:start; }
   }
   @media (max-width:640px) { .premium .topo { border-radius:22px; padding:12px 14px; position:relative; top:0; } /* no celular ocupa muito pra ficar grudado */ .premium main { padding-inline:14px; } }
-  @media (prefers-reduced-motion: reduce) { .premium body:not(.arrastando) .card:hover { transform:none; } }
   @media (prefers-reduced-transparency: reduce) { html.premium { --vidro:var(--bg); --card:var(--bg); } }
   /* Liquid Glass de verdade (só Chromium, html.lente): a barra e o alternador refratam o que passa por baixo, como lente */
   .premium .ordem-menu { backdrop-filter:none; -webkit-backdrop-filter:none; } /* vidro dentro de vidro quebra */
   /* --lente é um filtro SVG feito sob medida pra cada elemento (tamanho, cantos, tela) pelo script "lentes" */
-  .premium.lente .topo, .premium.lente .card { backdrop-filter:var(--lente, blur(28px)) saturate(180%); -webkit-backdrop-filter:var(--lente, blur(28px)) saturate(180%); }
-  /* Vidro quase incolor: a cor vem do fundo; o que desenha a peça é a borda polida */
-  .premium.lente { --card:rgb(255 255 255 / .42); }
-  @media (prefers-color-scheme: dark) { .premium.lente { --card:rgb(44 44 46 / .42); } }
+  .premium.lente .topo { backdrop-filter:var(--lente, blur(28px)) saturate(180%); -webkit-backdrop-filter:var(--lente, blur(28px)) saturate(180%); }
   .premium.lente .topo { background:linear-gradient(180deg, color-mix(in srgb, var(--bg) 52%, transparent), color-mix(in srgb, var(--bg) 40%, transparent));
     box-shadow:inset 0 1px 0 var(--brilho), inset 0 -1px 0 rgb(255 255 255 / .25), inset 1px 0 0 rgb(255 255 255 / .18),
                inset -1px 0 0 rgb(255 255 255 / .18), inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .05), 0 16px 40px -14px var(--sombra); }
-  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo, .premium.lente .card { backdrop-filter:none; } }
+  @media (prefers-reduced-transparency: reduce) { .premium.lente .topo { backdrop-filter:none; } }
   /* Calendário premium: ocupa o cartão, dias em círculo como no app Calendário, setas no cabeçalho do mês, legenda discreta */
   .premium .cal { position:relative; margin-top:14px; padding-top:16px; font-size:13px; }
   .premium .mes { max-width:none; }
@@ -810,13 +789,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .legenda .aula::before { background:color-mix(in srgb, var(--pres) 45%, transparent); }
   .premium .cal-feriados, .premium .cal-dica { text-align:center; font-size:11.5px; margin-top:6px; }
   .premium .modo-toque { margin:14px auto 0; }
-  /* Fundo geral: grade de pontinhos que some pra baixo, com uma luz fraca vindo de cima; dá à lente algo nítido pra entortar */
-  .premium body::before { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background:radial-gradient(circle, rgb(0 0 0 / .17) 1.1px, transparent 1.5px) 0 0 / 20px 20px;
-    -webkit-mask-image:radial-gradient(120% 75% at 50% 0%, #000 25%, transparent 80%); mask-image:radial-gradient(120% 75% at 50% 0%, #000 25%, transparent 80%); }
-  .premium body::after { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background:radial-gradient(90% 55% at 50% -10%, color-mix(in srgb, var(--pres) 14%, transparent), transparent 70%); }
-  @media (prefers-color-scheme: dark) { .premium body::before { background-image:radial-gradient(circle, rgb(255 255 255 / .14) 1.1px, transparent 1.5px); } }
   /* Aviso "Simulando…": chip neutro (vermelho fica só pra falta de verdade) */
   .premium .sim { width:max-content; max-width:100%; min-height:29px; margin-top:10px; padding:4px 6px 4px 11px; border-radius:980px; color:var(--sub);
                   background:var(--trilho); font-size:12px; }
@@ -829,29 +801,12 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .melhores ol { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:0; padding:0; list-style:none; }
   .melhores li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:14px 18px; border-radius:20px;
                  background:var(--card); box-shadow:inset 0 1px 0 var(--brilho, transparent), inset 0 0 0 1px var(--borda), 0 10px 26px -14px var(--sombra, rgb(0 0 0 / .2)); }
-  .premium .melhores li { backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%); }
   .melhores li b { font-size:17px; font-weight:650; letter-spacing:-.02em; text-transform:capitalize; }
   .melhores li span { font-size:13px; font-weight:600; color:var(--bom); }
   .melhores li small { grid-column:1 / -1; font-size:12.5px; color:var(--sub); line-height:1.45; }
   .melhores p { margin:0 0 0 4px; color:var(--sub); font-size:14px; }
-  /* Holofote: os pontinhos perto do mouse/dedo crescem e escurecem, seguindo com leve atraso */
-  @property --mx { syntax:'<length>'; inherits:false; initial-value:-999px; }
-  @property --my { syntax:'<length>'; inherits:false; initial-value:-999px; }
-  .holofote { display:none; }
-  .premium .holofote { display:block; position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background:radial-gradient(circle, rgb(0 0 0 / .38) 1.7px, transparent 2.1px) 0 0 / 20px 20px;
-    -webkit-mask-image:radial-gradient(170px circle at var(--mx) var(--my), #000, transparent);
-    mask-image:radial-gradient(170px circle at var(--mx) var(--my), #000, transparent);
-    transition:--mx .35s cubic-bezier(.16,1,.3,1), --my .35s cubic-bezier(.16,1,.3,1); }
-  @media (prefers-color-scheme: dark) { .premium .holofote { background-image:radial-gradient(circle, rgb(255 255 255 / .4) 1.7px, transparent 2.1px); } }
-  @media (prefers-reduced-motion: reduce) { .premium .holofote { transition:none; } }
-  /* A cor vem dos dados: cada cartão brilha na cor do estado da matéria (verde tranquila, laranja apertada, vermelho no limite) */
-  .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 11%, transparent); --sombra:color-mix(in srgb, var(--nivel) 30%, transparent);
-    background:radial-gradient(130% 90% at 0% 0%, var(--tom), transparent 65%), var(--card); }
-  @media (prefers-color-scheme: dark) { .premium .grade > .card { --tom:color-mix(in srgb, var(--nivel) 16%, transparent); --sombra:color-mix(in srgb, var(--nivel) 26%, rgb(0 0 0 / .5)); } }
   /* Presença garantida (dado real, a simulação não mexe): só o aro e o brilho ficam verdes */
-  .premium .grade > .card.garantido { --sombra:color-mix(in srgb, var(--bom) 45%, transparent);
-    outline:2px solid color-mix(in srgb, var(--bom) 55%, transparent); outline-offset:-2px; }
+  .premium .grade > .card.garantido { outline:1.5px solid color-mix(in srgb, var(--bom) 45%, transparent); outline-offset:-1.5px; }
   @media (prefers-reduced-motion: reduce) { .premium #simulador::after, .premium #ordem, .premium #so-hoje, .premium #atualizar { transition:none; } }
 </style>
 </head>
@@ -1310,11 +1265,11 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   const agendar = (el) => { fila.add(el); quadro ||= requestAnimationFrame(() => { quadro = 0; fila.forEach(aplicar); fila.clear(); }); };
   const ro = new ResizeObserver((es) => es.forEach((e) => agendar(e.target)));
   const vistos = new WeakSet();
-  const varrer = () => document.querySelectorAll('.topo, .grade > .card').forEach((el) => { if (!vistos.has(el)) { vistos.add(el); ro.observe(el); } });
+  const varrer = () => document.querySelectorAll('.topo').forEach((el) => { if (!vistos.has(el)) { vistos.add(el); ro.observe(el); } });
   varrer();
   new MutationObserver(varrer).observe(document.querySelector('main'), { childList: true, subtree: true }); // cartões novos depois de "Atualizar"
   let espera;
-  addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(() => document.querySelectorAll('.topo, .grade > .card').forEach(agendar), 180); });
+  addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(() => document.querySelectorAll('.topo').forEach(agendar), 180); });
 })();
 </script>
 <script>
@@ -1328,14 +1283,6 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       const fim = () => { setTimeout(() => el.classList.remove(classe), Math.max(0, 180 - (Date.now() - desde))); removeEventListener('pointerup', fim); removeEventListener('pointercancel', fim); };
       addEventListener('pointerup', fim); addEventListener('pointercancel', fim);
     });
-    // Holofote: os pontinhos perto do mouse/dedo crescem, seguindo com leve atraso
-    const luz = document.createElement('div'); luz.className = 'holofote'; luz.setAttribute('aria-hidden', 'true');
-    document.body.prepend(luz);
-    let pos = null;
-    addEventListener('pointermove', (e) => {
-      if (!pos) requestAnimationFrame(() => { luz.style.setProperty('--mx', pos[0] + 'px'); luz.style.setProperty('--my', pos[1] + 'px'); pos = null; });
-      pos = [e.clientX, e.clientY];
-    }, { passive: true });
     const sim = document.querySelector('#simulador');
     if (sim) {
       segurar(sim, 'apertado');
