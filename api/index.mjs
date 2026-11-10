@@ -81,29 +81,43 @@ function telaLogin(erro = '') {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Frequência — entrar</title>
+<title>Entrar · Frequência Insper</title>
 <style>
-  :root { --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --borda:#d2d2d7; --azul:#0a63c9; --erro:#d70015; --sobre-azul:#fff; }
+  :root { color-scheme:light dark; --bg:#f5f5f7; --card:#fff; --txt:#1d1d1f; --sub:#6e6e73; --borda:#e5e5ea; --campo:#d2d2d7; --azul:#0a63c9; --erro:#d70015; --sobre-azul:#fff; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --borda:#3a3a3c; --azul:#409cff; --erro:#ff453a; --sobre-azul:#000; }
+    :root { --bg:#000; --card:#1c1c1e; --txt:#f5f5f7; --sub:#98989d; --borda:#2c2c2e; --campo:#3a3a3c; --azul:#409cff; --erro:#ff453a; --sobre-azul:#000; }
   }
   * { box-sizing:border-box; }
+  /* Mesmo mundo do painel: fundo liso, cartão sólido de canto grande, azul só na ação principal */
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
-         background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif; }
-  form { background:var(--card); border:1px solid var(--borda); border-radius:18px; padding:28px; width:100%; max-width:380px; }
-  h1 { font-size:24px; margin:0 0 4px; }
-  .sub { color:var(--sub); font-size:14px; margin:0 0 20px; }
-  label { display:block; font-size:13px; color:var(--sub); margin:14px 0 6px; }
-  input[type=text], input[type=password] { width:100%; font:inherit; padding:10px 12px; border-radius:10px;
-         border:1px solid var(--borda); background:transparent; color:var(--txt); }
-  .lembrar { display:flex; gap:8px; align-items:flex-start; margin-top:16px; font-size:14px; }
-  .lembrar small { display:block; color:var(--sub); font-size:12px; }
-  button { margin-top:20px; width:100%; font:inherit; font-weight:600; padding:11px; border:0; border-radius:980px;
-           background:var(--azul); color:var(--sobre-azul); cursor:pointer; }
-  button:disabled { opacity:.6; }
-  .erro { color:var(--erro); font-size:14px; margin:12px 0 0; }
-  .aviso { color:var(--sub); font-size:12px; margin:18px 0 0; }
-  .demo { display:block; text-align:center; margin-top:14px; font-size:14px; color:var(--azul); }
+         background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+         letter-spacing:-.01em; -webkit-font-smoothing:antialiased; }
+  ::selection { background:color-mix(in srgb, var(--azul) 22%, transparent); }
+  form { background:var(--card); border-radius:26px; padding:30px 28px 24px; width:100%; max-width:380px;
+         box-shadow:inset 0 0 0 1px var(--borda), 0 1px 2px rgb(0 0 0 / .04), 0 14px 36px -14px rgb(0 0 0 / .18); }
+  h1 { font-size:22px; font-weight:700; letter-spacing:-.022em; margin:0 0 6px; }
+  .sub { color:var(--sub); font-size:14px; margin:0 0 22px; text-wrap:pretty; }
+  label { display:block; font-size:13px; font-weight:500; color:var(--sub); margin:16px 0 6px; }
+  input[type=text], input[type=password] { width:100%; font:inherit; font-size:16px; padding:11px 14px; border-radius:12px;
+         border:1px solid var(--campo); background:transparent; color:var(--txt); caret-color:var(--azul);
+         transition:border-color .15s, box-shadow .15s; }
+  input[type=text]:focus, input[type=password]:focus { outline:none; border-color:var(--azul);
+         box-shadow:0 0 0 3px color-mix(in srgb, var(--azul) 22%, transparent); }
+  .dica { margin:6px 0 0; font-size:12px; color:var(--sub); }
+  .lembrar { display:flex; gap:10px; align-items:flex-start; margin-top:18px; font-size:14px; color:var(--txt); cursor:pointer; }
+  .lembrar input { width:18px; height:18px; margin:1px 0 0; flex:none; accent-color:var(--azul); }
+  .lembrar small { display:block; color:var(--sub); font-size:12px; margin-top:2px; }
+  button { margin-top:22px; width:100%; min-height:46px; font:inherit; font-weight:600; padding:11px; border:0; border-radius:980px;
+           background:var(--azul); color:var(--sobre-azul); cursor:pointer; transition:transform .15s, filter .15s; }
+  button:hover:not(:disabled) { filter:brightness(1.08); }
+  button:active:not(:disabled) { transform:scale(.97); }
+  button:focus-visible, .demo:focus-visible, .lembrar input:focus-visible { outline:2px solid var(--azul); outline-offset:3px; }
+  button:disabled { opacity:.6; cursor:default; }
+  .erro { color:var(--erro); font-size:14px; margin:14px 0 0; }
+  .demo { display:block; text-align:center; margin-top:8px; padding:10px 0; font-size:14px; font-weight:500; color:var(--azul); text-decoration:none; border-radius:8px; }
+  .demo:hover { text-decoration:underline; text-underline-offset:3px; }
+  .aviso { color:var(--sub); font-size:12px; margin:10px 0 0; text-align:center; }
+  @media (prefers-reduced-motion: reduce) { input, button { transition:none; } }
 </style>
 </head>
 <body>
@@ -114,7 +128,8 @@ function telaLogin(erro = '') {
   <input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
   <label for="senha">Senha</label>
   <!-- Sem name: a senha em texto nunca é enviada, só a versão cifrada no campo escondido -->
-  <input id="senha" type="password" autocomplete="current-password" required>
+  <input id="senha" type="password" autocomplete="current-password" required aria-describedby="dica-senha">
+  <p class="dica" id="dica-senha">Cifrada aqui no navegador com a chave do portal do Insper. Este site nunca vê a senha.</p>
   <input type="hidden" name="senhaCifrada">
   <label class="lembrar"><input type="checkbox" name="lembrar" value="1">
     <span>Manter conectado neste navegador<small>A senha cifrada fica só neste navegador, pra entrar sozinho quando a sessão do portal expirar. Use só no seu computador.</small></span>
@@ -122,7 +137,7 @@ function telaLogin(erro = '') {
   <p class="erro" ${erro ? '' : 'hidden'}>${esc(erro)}</p>
   <button type="submit">Entrar</button>
   <a class="demo" href="/demo">Não estuda no Insper? Ver um exemplo</a>
-  <p class="aviso">Projeto pessoal, não oficial do Insper. A senha é criptografada aqui no seu navegador com a chave do portal do Insper; este site nunca vê a senha.</p>
+  <p class="aviso">Projeto pessoal, não oficial do Insper.</p>
 </form>
 <script>
 // RSA PKCS#1 v1.5 (o mesmo do JSEncrypt que o Aluno Online usa). WebCrypto não tem esse padding,
@@ -156,10 +171,10 @@ form.addEventListener('submit', async (ev) => {
   try {
     form.senhaCifrada.value = await cifrar(document.getElementById('senha').value);
     form.submit();
-  } catch {
+  } catch (e) {
     botao.disabled = false;
     botao.textContent = 'Entrar';
-    erro.textContent = 'Não consegui preparar o login. Tente de novo em alguns minutos.';
+    erro.textContent = e.message === 'Senha longa demais.' ? e.message : 'Não consegui pegar a chave do portal pra cifrar a senha. Tente de novo em alguns minutos.';
     erro.hidden = false;
   }
 });

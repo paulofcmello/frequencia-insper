@@ -740,15 +740,11 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium footer { margin-top:12px; padding-top:10px; font-size:13px; }
   .premium .rodape { text-align:center; }
   @media (max-width:1000px) { .premium #ordem-rotulo { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); } }
-  /* Celular: barra em 3 linhas (título · ordem e Hoje · Simulador com Atualizar/Sair) e melhores dias numa faixa que rola de lado */
+  /* Celular: barra em 3 linhas (título · ordem e Hoje · Simulador com Atualizar/Sair) */
   @media (max-width:640px) {
     .premium .topo { justify-content:flex-start; }
     .premium .titulo { display:contents; }
     .premium .acoes { margin-left:auto; }
-    .melhores ol { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:82%; overflow-x:auto; scroll-snap-type:x mandatory;
-                   margin:0 -14px; padding:0 14px 4px; scroll-padding-inline:14px; scrollbar-width:none; }
-    .melhores ol::-webkit-scrollbar { display:none; }
-    .melhores li { scroll-snap-align:start; }
   }
   @media (max-width:640px) { .premium .topo { border-radius:22px; padding:12px 14px; position:relative; top:0; } /* no celular ocupa muito pra ficar grudado */ .premium main { padding-inline:14px; } }
   @media (prefers-reduced-transparency: reduce) { html.premium { --vidro:var(--bg); --card:var(--bg); } }
@@ -797,8 +793,8 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .sim b { color:var(--txt); font-weight:600; }
   .premium .limpar-sim { padding:2px 9px; border-radius:980px; background:var(--card); color:var(--pres); text-decoration:none; font-weight:600;
                          box-shadow:0 1px 2px rgb(0 0 0 / .08); }
-  /* Melhores dias pra faltar: três cartõezinhos de vidro abaixo da grade */
-  .melhores { margin:0 0 22px; }
+  /* Melhores dias pra faltar: três cartõezinhos abaixo da grade */
+  .melhores { margin:28px 0 0; }
   .melhores h2 { font-size:17px; font-weight:650; color:var(--txt); margin:0 0 10px 4px; letter-spacing:-.02em; }
   .melhores ol { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:0; padding:0; list-style:none; }
   .melhores li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:14px 18px; border-radius:20px;
@@ -960,7 +956,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       ? '<ol>' + bons.map((x) => '<li><b>' + dataBR(x.d) + '</b><span>' + plural(x.aulas, 'aula') + '</span><small>' +
           x.itens.map((i) => escH(i.nome) + ' · ainda sobram ' + i.sobra).join('<br>') + '</small></li>').join('') + '</ol>'
       : '<p>Nenhum dia nas próximas 3 semanas cabe na folga de todas as matérias.</p>');
-    grade.before(sec); // antes dos cartões: é a resposta mais direta pra "qual dia dá pra faltar?"
+    grade.after(sec);
   }
   addEventListener('DOMContentLoaded', melhoresDias);
   function marcar(b, tipo) { b.classList.toggle('plano', tipo === 'plano'); b.classList.toggle('vou', tipo === 'vou'); b.setAttribute('aria-pressed', !!tipo); }
