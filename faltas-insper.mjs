@@ -397,7 +397,7 @@ function cartao(m, i) {
     <div class="stats">
       <div>
         <div class="k">Presenças</div>
-        <div class="v">${m.presencas}<small>/${m.presencasNecessarias}</small></div>
+        <div class="v">${m.presencas}<small> · mín. ${m.presencasNecessarias}</small></div>
         <div class="trilho"><div class="barra pres" style="width:${barra(m.presencas, m.presencasNecessarias)}%"></div></div>
         <div class="nota">${notaPresencas}</div>
       </div>
@@ -755,6 +755,16 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium footer { margin-top:12px; padding-top:10px; }
   .premium .rodape { text-align:center; }
   @media (max-width:1000px) { .premium #ordem-rotulo { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); } }
+  /* Celular: barra em 3 linhas (título · ordem e Hoje · Simulador com Atualizar/Sair) e melhores dias numa faixa que rola de lado */
+  @media (max-width:640px) {
+    .premium .topo { justify-content:flex-start; }
+    .premium .titulo { display:contents; }
+    .premium .acoes { margin-left:auto; }
+    .melhores ol { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:82%; overflow-x:auto; scroll-snap-type:x mandatory;
+                   margin:0 -14px; padding:0 14px 4px; scroll-padding-inline:14px; scrollbar-width:none; }
+    .melhores ol::-webkit-scrollbar { display:none; }
+    .melhores li { scroll-snap-align:start; }
+  }
   @media (max-width:640px) { .premium .topo { border-radius:22px; padding:12px 14px; position:relative; top:0; } /* no celular ocupa muito pra ficar grudado */ .premium main { padding-inline:14px; } }
   @media (prefers-reduced-motion: reduce) { .premium body:not(.arrastando) .card:hover { transform:none; } }
   @media (prefers-reduced-transparency: reduce) { html.premium { --vidro:var(--bg); --card:var(--bg); } }
@@ -814,7 +824,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
   .premium .limpar-sim { padding:2px 9px; border-radius:980px; background:var(--card); color:var(--pres); text-decoration:none; font-weight:600;
                          box-shadow:0 1px 2px rgb(0 0 0 / .08); }
   /* Melhores dias pra faltar: três cartõezinhos de vidro abaixo da grade */
-  .melhores { margin:28px 0 0; }
+  .melhores { margin:0 0 22px; }
   .melhores h2 { font-size:15px; font-weight:650; color:var(--sub); margin:0 0 10px 4px; letter-spacing:-.01em; }
   .melhores ol { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:0; padding:0; list-style:none; }
   .melhores li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:14px 18px; border-radius:20px;
@@ -993,7 +1003,7 @@ ${modo === 'arquivo' ? '<meta http-equiv="refresh" content="300">' : ''}
       ? '<ol>' + bons.map((x) => '<li><b>' + dataBR(x.d) + '</b><span>' + plural(x.aulas, 'aula') + '</span><small>' +
           x.itens.map((i) => escH(i.nome) + ' · ainda sobram ' + i.sobra).join('<br>') + '</small></li>').join('') + '</ol>'
       : '<p>Nenhum dia nas próximas 3 semanas cabe na folga de todas as matérias.</p>');
-    grade.after(sec);
+    grade.before(sec); // antes dos cartões: é a resposta mais direta pra "qual dia dá pra faltar?"
   }
   addEventListener('DOMContentLoaded', melhoresDias);
   function marcar(b, tipo) { b.classList.toggle('plano', tipo === 'plano'); b.classList.toggle('vou', tipo === 'vou'); b.setAttribute('aria-pressed', !!tipo); }
